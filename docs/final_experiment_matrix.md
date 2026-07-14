@@ -19,9 +19,10 @@ scale. Injected variants are the primary detection units. Clean variants are
 negative controls and are not pooled into recall estimates.
 
 Small graphs use the preregistered 250,000 global bounded-path cap. Medium
-graphs use a 5,000 cap, 10 paths per source, and 5 paths per source-target pair
-after retained 250,000- and 30,000-cap diagnostics demonstrated excessive
-memory or runtime. Those diagnostic runs are excluded from the final matrix.
+graphs use a 1,000 cap, 3 paths per source, 1 path per source-target pair, and
+maximum depth 6 after retained 250,000-, 30,000-, and 5,000-cap diagnostics
+demonstrated excessive memory or runtime. Those diagnostic runs are excluded
+from the final matrix.
 These scale-specific limits are fixed before the final medium matrix, saved in
 every resolved configuration, applied symmetrically to the methods, and
 reported through per-run truncation warnings. Cross-scale recall is therefore
