@@ -333,5 +333,16 @@ def report(
     )
 
 
+@app.command("serve")
+def serve(
+    host: Annotated[str, typer.Option("--host")] = "127.0.0.1",
+    port: Annotated[int, typer.Option("--port", min=1, max=65535)] = 8000,
+) -> None:
+    """Serve the versioned investigation API."""
+    import uvicorn
+
+    uvicorn.run("graphtrust.api.app:app", host=host, port=port, reload=False)
+
+
 if __name__ == "__main__":
     app()
