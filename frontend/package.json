@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "tsc -b --pretty false"
+    "lint": "tsc -b --pretty false",
+    "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
     "cytoscape": "^3.33.1",

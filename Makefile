@@ -1,4 +1,4 @@
-.PHONY: sync lint format-check typecheck test quality
+.PHONY: sync lint format-check typecheck test frontend-quality quality
 
 sync:
 	uv sync --all-extras
@@ -15,4 +15,10 @@ typecheck:
 test:
 	uv run pytest -m "not performance" --cov=graphtrust --cov-report=term-missing
 
-quality: lint format-check typecheck test
+frontend-quality:
+	npm --prefix frontend run lint
+	npm --prefix frontend run typecheck
+	npm --prefix frontend run test
+	npm --prefix frontend run build
+
+quality: lint format-check typecheck test frontend-quality
