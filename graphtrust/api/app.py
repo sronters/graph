@@ -10,6 +10,7 @@ from fastapi import BackgroundTasks, FastAPI, HTTPException, Query, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from starlette.concurrency import run_in_threadpool
 
 from graphtrust import __version__
 from graphtrust.api.repository import ApiRepository
@@ -147,7 +148,8 @@ def create_app(
 
     @app.get("/api/v1/datasets", response_model=DatasetPage)
     async def datasets(page: Page = 1, page_size: PageSize = 50) -> DatasetPage:
-        values = tuple(_datasets(resolved_data).values())
+        catalog = await run_in_threadpool(_datasets, resolved_data)
+        values = tuple(catalog.values())
         start = (page - 1) * page_size
         return DatasetPage(
             items=values[start : start + page_size],
@@ -160,7 +162,8 @@ def create_app(
         "/api/v1/datasets/{dataset_id}", response_model=DatasetSummary, responses=error_responses
     )
     async def dataset_detail(dataset_id: str) -> DatasetSummary:
-        dataset = _datasets(resolved_data).get(dataset_id)
+        catalog = await run_in_threadpool(_datasets, resolved_data)
+        dataset = catalog.get(dataset_id)
         if dataset is None:
             raise _error(404, "dataset_not_found", f"Dataset {dataset_id} was not found")
         return dataset
@@ -171,7 +174,8 @@ def create_app(
     async def create_analysis(request: AnalysisCreate, background: BackgroundTasks) -> AnalysisJob:
         if len(set(request.methods)) != len(request.methods):
             raise _error(422, "duplicate_methods", "Analysis methods must be unique")
-        dataset = _datasets(resolved_data).get(request.dataset_id)
+        catalog = await run_in_threadpool(_datasets, resolved_data)
+        dataset = catalog.get(request.dataset_id)
         if dataset is None:
             raise _error(404, "dataset_not_found", f"Dataset {request.dataset_id} was not found")
         created = datetime.now(UTC).isoformat()
@@ -286,7 +290,13 @@ def create_app(
         _require_result(row)
         if any(not 0 < target <= 1 for target in request.targets):
             raise _error(422, "invalid_target", "Targets must be in (0, 1]")
-        plans = remediate(Path(row["dataset_path"]), config, request.solvers, request.targets)
+        plans = await run_in_threadpool(
+            remediate,
+            Path(row["dataset_path"]),
+            config,
+            request.solvers,
+            request.targets,
+        )
         for plan in plans:
             repository.save_plan(analysis_id, str(plan["plan_id"]), plan)
         return {"items": plans, "recommendation_only": True}
@@ -306,7 +316,12 @@ def create_app(
         row = _require_analysis(repository, analysis_id)
         _require_result(row)
         try:
-            return counterfactual(Path(row["dataset_path"]), config, request.removed_edge_ids)
+            return await run_in_threadpool(
+                counterfactual,
+                Path(row["dataset_path"]),
+                config,
+                request.removed_edge_ids,
+            )
         except ValueError as error:
             raise _error(422, "invalid_edge_selection", str(error)) from error
 

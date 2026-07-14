@@ -11,6 +11,7 @@ htmlcov/
 .DS_Store
 node_modules/
 frontend/dist/
+*.tsbuildinfo
 artifacts/*
 !artifacts/.gitkeep
 data/generated/*
