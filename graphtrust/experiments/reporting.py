@@ -63,6 +63,7 @@ def generate_report(runs_root: Path, output: Path) -> dict[str, Any]:
                     "method": method,
                     "metric": metric,
                     "count": len(values),
+                    "source_run_ids": ";".join(sorted(group["run_id"].to_list())),
                     "median": float(np.median(values)),
                     "q1": float(np.quantile(values, 0.25)),
                     "q3": float(np.quantile(values, 0.75)),

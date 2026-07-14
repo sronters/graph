@@ -6,13 +6,16 @@ import platform
 import shutil
 import subprocess
 import sys
+import threading
 import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 from uuid import uuid4
 
 import polars as pl
+import psutil  # type: ignore[import-untyped]
 import yaml
 
 from graphtrust.analysis.pipeline import analyze_bundle
@@ -181,6 +184,32 @@ def _environment() -> str:
     return f"python={sys.version}\nplatform={platform.platform()}\n\n{packages}\n"
 
 
+def _run_with_memory_sampling(
+    bundle: Any,
+    config: ProjectConfig,
+    method: Any,
+) -> tuple[Any, float, float]:
+    """Run inference while sampling process resident memory."""
+    process = psutil.Process()
+    peak_rss = [process.memory_info().rss]
+    stop = threading.Event()
+
+    def sample() -> None:
+        while not stop.wait(0.05):
+            peak_rss[0] = max(peak_rss[0], process.memory_info().rss)
+
+    sampler = threading.Thread(target=sample, name="graphtrust-rss-sampler", daemon=True)
+    sampler.start()
+    started = time.perf_counter()
+    try:
+        analysis = analyze_bundle(bundle, config, (method,))
+    finally:
+        stop.set()
+        sampler.join(timeout=1)
+        peak_rss[0] = max(peak_rss[0], process.memory_info().rss)
+    return analysis, time.perf_counter() - started, peak_rss[0] / (1024 * 1024)
+
+
 def run_experiment_unit(
     unit: ExperimentUnit,
     config: ProjectConfig,
@@ -210,8 +239,9 @@ def run_experiment_unit(
     started = datetime.now(UTC)
     clock = time.perf_counter()
     try:
-        analysis = analyze_bundle(bundle, config, (unit.method,))
-        inference_seconds = time.perf_counter() - clock
+        analysis, inference_seconds, peak_rss_mib = _run_with_memory_sampling(
+            bundle, config, unit.method
+        )
         result = analysis.results[unit.method]
         # The benchmark truth is first accessed here, after all inference is complete.
         identity_count = sum(
@@ -273,6 +303,7 @@ def run_experiment_unit(
                 "total_seconds": time.perf_counter() - clock,
                 "expanded_states": result.expanded_states,
                 "candidate_paths_considered": result.candidate_paths_considered,
+                "peak_rss_mib": peak_rss_mib,
             },
         )
         _json(staging / "warnings.json", list(result.warnings))

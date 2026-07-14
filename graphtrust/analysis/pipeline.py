@@ -23,7 +23,10 @@ def analyze_bundle(
     methods: tuple[AnalysisMethod, ...],
 ) -> DatasetAnalysis:
     """Compile raw semantics, then run methods without exposing benchmark truth."""
-    records = bundle_to_records(bundle)
+    records = bundle_to_records(
+        bundle,
+        criticality_threshold=config.analysis.criticality_threshold,
+    )
     compiler = SemanticCompiler(
         condition_mode=config.condition_mode,
         evaluated_at=bundle.manifest.generated_at,

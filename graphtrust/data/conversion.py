@@ -19,8 +19,14 @@ class CanonicalRecords:
     critical_asset_ids: tuple[str, ...]
 
 
-def bundle_to_records(bundle: DatasetBundle) -> CanonicalRecords:
+def bundle_to_records(
+    bundle: DatasetBundle,
+    *,
+    criticality_threshold: float = 0.70,
+) -> CanonicalRecords:
     """Validate canonical rows and preserve the truth-separation boundary."""
+    if not 0 <= criticality_threshold <= 1:
+        raise ValueError("criticality_threshold must be in [0, 1]")
     nodes = tuple(
         GraphNode.model_validate(row) for row in bundle.nodes.sort("node_id").iter_rows(named=True)
     )
@@ -38,7 +44,7 @@ def bundle_to_records(bundle: DatasetBundle) -> CanonicalRecords:
     critical_asset_ids = tuple(
         str(value)
         for value in bundle.assets.filter(
-            bundle.assets["is_critical"] & (bundle.assets["criticality"] >= 0.70)
+            bundle.assets["is_critical"] & (bundle.assets["criticality"] >= criticality_threshold)
         )
         .sort("node_id")
         .get_column("node_id")
