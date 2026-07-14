@@ -9,6 +9,7 @@ import pytest
 from graphtrust.analysis.runner import AnalysisLimits, run_analysis_methods
 from graphtrust.graph.networkx_backend import NetworkXBackend
 from graphtrust.remediation.alternatives import alternative_plans
+from graphtrust.remediation.business_constraints import verify_business_requirements
 from graphtrust.remediation.constraint_generation import solve_with_constraint_generation
 from graphtrust.remediation.degree_baseline import solve_degree_greedy
 from graphtrust.remediation.min_cut import solve_weighted_min_cut
@@ -306,3 +307,24 @@ def test_all_remediation_methods_share_target_protocol() -> None:
     assert {run.solver for run in runs} == set(SolverName)
     assert all(run.target_fraction == 0.8 for run in runs)
     assert all(run.plan.protected_workflows_preserved for run in runs)
+
+
+def test_business_requirement_filters_capability_before_path_cap() -> None:
+    """A lexically earlier distractor route must not hide a protected capability."""
+    base = remediation_problem()
+    distractor = edge(
+        "effective:aaa-distractor",
+        "operator",
+        "safe",
+        capability="ADMINISTERS",
+        transition="ADMINISTERS",
+    )
+    problem = RemediationProblem(
+        backend=NetworkXBackend(base.backend.nodes(), (*base.backend.edges(), distractor)),
+        raw_edges=base.raw_edges,
+        findings=base.findings,
+        requirements=base.requirements,
+    )
+    verification = verify_business_requirements(problem, ())
+    assert verification.valid
+    assert verification.requirements[0].remaining_paths == 1

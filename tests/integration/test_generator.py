@@ -13,6 +13,9 @@ from graphtrust.generator.frames import EDGE_SCHEMA, records_frame
 from graphtrust.generator.models import SCALE_SPECS, ProfileName
 from graphtrust.generator.risk_injection import SCENARIO_FAMILIES, inject_risk_scenarios
 from graphtrust.generator.runner import build_clean_state, generate_dataset_suite
+from graphtrust.remediation.business_constraints import verify_business_requirements
+from graphtrust.remediation.factory import build_remediation_problem
+from graphtrust.settings import load_project_config
 
 
 def test_scale_targets_stay_inside_preregistered_ranges() -> None:
@@ -124,3 +127,22 @@ def test_same_seed_and_config_produce_identical_dataset_tree(tmp_path: Path) -> 
     report = validate_bundle(loaded)
     assert report.valid
     assert loaded.manifest.realized_counts["raw_edges"] == 12_000
+
+
+def test_generated_protected_workflows_are_valid_before_remediation(tmp_path: Path) -> None:
+    generated = generate_dataset_suite(
+        profile="saas_scaleup",
+        scale="small",
+        seed=104729,
+        variants=("injected_mixed",),
+        output_root=tmp_path,
+    )[0]
+    problem = build_remediation_problem(
+        generated.destination,
+        load_project_config(Path("configs/default.yaml")),
+    )
+    verification = verify_business_requirements(problem, ())
+    assert verification.valid
+    assert all(
+        result.remaining_paths >= result.required_paths for result in verification.requirements
+    )
