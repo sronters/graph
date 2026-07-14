@@ -3,7 +3,6 @@
 import json
 import os
 import platform
-import resource
 import shutil
 import subprocess
 import sys
@@ -34,6 +33,10 @@ from graphtrust.schemas.findings import PathFinding
 from graphtrust.schemas.manifests import RunManifest
 from graphtrust.schemas.nodes import NodeType
 from graphtrust.settings import ProjectConfig
+
+_resource: Any = None
+with suppress(ImportError):
+    import resource as _resource
 
 RUN_FILES = (
     "run_manifest.json",
@@ -200,9 +203,12 @@ def _run_with_memory_sampling(
         # Some constrained containers hide the current PID from /proc.  The
         # process-wide high-water mark remains available through getrusage.
         process = None
-        initial_rss = int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
-        if platform.system() != "Darwin":
-            initial_rss *= 1024
+        if _resource is None:
+            initial_rss = 0
+        else:
+            initial_rss = int(_resource.getrusage(_resource.RUSAGE_SELF).ru_maxrss)
+            if platform.system() != "Darwin":
+                initial_rss *= 1024
     peak_rss = [initial_rss]
     stop = threading.Event()
 

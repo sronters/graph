@@ -7,6 +7,10 @@ services:
       GRAPHTRUST_DATA_ROOT: /app/data
       GRAPHTRUST_ARTIFACT_ROOT: /app/artifacts
       GRAPHTRUST_DATABASE_PATH: /app/artifacts/graphtrust.duckdb
+    # The host bind mount is often root-owned on CI and Docker Desktop. The
+    # immutable image default remains the unprivileged graphtrust user; this
+    # Compose-only override lets DuckDB create the mounted artifact database.
+    user: "0:0"
     volumes:
       - ./data:/app/data:ro
       - ./artifacts:/app/artifacts
