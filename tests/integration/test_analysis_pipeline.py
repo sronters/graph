@@ -67,8 +67,25 @@ def test_analyze_cli_executes_real_fixture(tmp_path: Path) -> None:
             "direct,graphtrust",
             "--config",
             "configs/default.yaml",
+            "--output",
+            str(tmp_path / "latest"),
         ],
     )
     assert result.exit_code == 0, result.output
     assert '"effective_edges": 1' in result.output
     assert '"graphtrust"' in result.output
+    remediation = CliRunner().invoke(
+        app,
+        [
+            "remediate",
+            "--analysis",
+            str(tmp_path / "latest"),
+            "--solvers",
+            "degree_greedy",
+            "--targets",
+            "0.80",
+        ],
+    )
+    assert remediation.exit_code == 0, remediation.output
+    assert '"plans": 1' in remediation.output
+    assert (tmp_path / "latest" / "remediation_plans.json").is_file()

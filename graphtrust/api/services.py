@@ -1,21 +1,19 @@
 """Truth-safe analysis and remediation application services."""
 
-import json
 from pathlib import Path
 from typing import Any
 
 from graphtrust.analysis.pipeline import DatasetAnalysis, analyze_bundle
 from graphtrust.api.repository import ApiRepository
 from graphtrust.data import read_dataset
-from graphtrust.graph.networkx_backend import NetworkXBackend
-from graphtrust.remediation.problem import RemediationProblem
+from graphtrust.remediation.factory import build_remediation_problem
 from graphtrust.remediation.runner import run_remediation_methods
 from graphtrust.remediation.verification import (
     exposure_reduction,
     verify_source_target_reachability,
 )
 from graphtrust.schemas.findings import AnalysisMethod
-from graphtrust.schemas.remediation import BusinessRequirement, SolverName
+from graphtrust.schemas.remediation import SolverName
 from graphtrust.settings import ProjectConfig
 
 
@@ -71,36 +69,6 @@ def execute_analysis_job(
         repository.mark_succeeded(analysis_id, serialize_analysis(analysis))
     except Exception as error:  # background boundary must persist all ordinary failures
         repository.mark_failed(analysis_id, f"{type(error).__name__}: {error}")
-
-
-def _requirements(bundle_path: Path) -> tuple[BusinessRequirement, ...]:
-    bundle = read_dataset(bundle_path)
-    return tuple(
-        BusinessRequirement(
-            requirement_id=str(row["requirement_id"]),
-            source_set=frozenset(json.loads(str(row["source_set_json"]))),
-            target_set=frozenset(json.loads(str(row["target_set_json"]))),
-            required_capability=str(row["required_capability"]),
-            minimum_remaining_paths=int(row["minimum_remaining_paths"]),
-            maximum_path_length=int(row["maximum_path_length"]),
-            priority=int(row["priority"]),
-        )
-        for row in bundle.protected_requirements.iter_rows(named=True)
-    )
-
-
-def build_remediation_problem(
-    dataset_path: Path,
-    config: ProjectConfig,
-) -> RemediationProblem:
-    bundle = read_dataset(dataset_path)
-    analysis = analyze_bundle(bundle, config, (AnalysisMethod.GRAPHTRUST,))
-    return RemediationProblem(
-        backend=NetworkXBackend(analysis.records.nodes, analysis.compilation.effective_edges),
-        raw_edges=analysis.records.edges,
-        findings=analysis.results[AnalysisMethod.GRAPHTRUST].findings,
-        requirements=_requirements(dataset_path),
-    )
 
 
 def remediate(

@@ -9,6 +9,7 @@ from typing import Annotated
 import typer
 
 from graphtrust import __version__
+from graphtrust.analysis.artifacts import read_analysis_index, write_latest_analysis_index
 from graphtrust.analysis.pipeline import analyze_bundle
 from graphtrust.data import read_dataset, validate_bundle
 from graphtrust.experiments.registry import ExperimentUnit, expand_registry, load_registry
@@ -16,7 +17,10 @@ from graphtrust.experiments.reporting import generate_report
 from graphtrust.experiments.runner import ExperimentOutcome, run_experiment_unit
 from graphtrust.generator.models import SCALE_SPECS
 from graphtrust.generator.runner import SUPPORTED_VARIANTS, generate_dataset_suite
+from graphtrust.remediation.factory import build_remediation_problem
+from graphtrust.remediation.runner import run_remediation_methods
 from graphtrust.schemas.findings import AnalysisMethod
+from graphtrust.schemas.remediation import SolverName
 from graphtrust.settings import load_project_config
 
 app = typer.Typer(
@@ -166,6 +170,10 @@ def analyze(
         Path,
         typer.Option("--config", exists=True, dir_okay=False),
     ] = Path("configs/default.yaml"),
+    output: Annotated[
+        Path,
+        typer.Option("--output", file_okay=False),
+    ] = Path("artifacts/latest"),
     dry_run: Annotated[bool, typer.Option("--dry-run")] = False,
 ) -> None:
     """Compile IAM semantics and run truth-hidden analysis methods."""
@@ -194,6 +202,14 @@ def analyze(
             )
             return
         analysis = analyze_bundle(bundle, project_config, selected_methods)
+        write_latest_analysis_index(
+            output,
+            dataset_path=dataset,
+            config_path=config,
+            bundle=bundle,
+            config=project_config,
+            methods=selected_methods,
+        )
     except (FileNotFoundError, OSError, ValueError) as analysis_error:
         typer.echo(f"Analysis failed: {analysis_error}", err=True)
         raise typer.Exit(code=1) from analysis_error
@@ -212,6 +228,81 @@ def analyze(
                     }
                     for method, result in analysis.results.items()
                 },
+            },
+            sort_keys=True,
+        )
+    )
+
+
+@app.command("remediate")
+def remediate_command(
+    analysis: Annotated[
+        Path,
+        typer.Option("--analysis", exists=True, file_okay=False),
+    ] = Path("artifacts/latest"),
+    solvers: Annotated[
+        str,
+        typer.Option("--solvers"),
+    ] = ",".join(solver.value for solver in SolverName),
+    targets: Annotated[str, typer.Option("--targets")] = "0.80,0.90,1.00",
+    dry_run: Annotated[bool, typer.Option("--dry-run")] = False,
+) -> None:
+    """Calculate recommendation-only remediation plans from a saved analysis pointer."""
+    try:
+        index = read_analysis_index(analysis)
+        selected_solvers = tuple(
+            SolverName(value.strip()) for value in solvers.split(",") if value.strip()
+        )
+        selected_targets = tuple(
+            float(value.strip()) for value in targets.split(",") if value.strip()
+        )
+        if not selected_solvers or not selected_targets:
+            raise ValueError("At least one solver and target are required")
+        dataset_path = Path(str(index["dataset_path"]))
+        config_path = Path(str(index["config_path"]))
+        config = load_project_config(config_path)
+        if dry_run:
+            typer.echo(
+                json.dumps(
+                    {
+                        "dry_run": True,
+                        "dataset_id": index["dataset_id"],
+                        "solvers": [solver.value for solver in selected_solvers],
+                        "targets": selected_targets,
+                    },
+                    sort_keys=True,
+                )
+            )
+            return
+        problem = build_remediation_problem(dataset_path, config)
+        runs = run_remediation_methods(
+            problem,
+            solvers=selected_solvers,
+            targets=selected_targets,
+            maximum_depth=config.analysis.maximum_depth,
+        )
+        payload = [
+            {
+                "target_fraction": run.target_fraction,
+                **run.plan.model_dump(mode="json"),
+            }
+            for run in runs
+        ]
+        output = analysis / "remediation_plans.json"
+        output.write_text(
+            json.dumps(payload, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+    except (FileNotFoundError, OSError, ValueError) as remediation_error:
+        typer.echo(f"Remediation failed: {remediation_error}", err=True)
+        raise typer.Exit(code=1) from remediation_error
+    typer.echo(
+        json.dumps(
+            {
+                "dataset_id": index["dataset_id"],
+                "plans": len(payload),
+                "output": str(output),
             },
             sort_keys=True,
         )
