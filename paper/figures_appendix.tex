@@ -1,0 +1,48 @@
+\documentclass[10pt]{article}
+\usepackage[letterpaper,margin=0.55in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\definecolor{GTBlue}{HTML}{2563EB}
+\definecolor{GTInk}{HTML}{172033}
+\color{GTInk}
+\hypersetup{colorlinks=true,urlcolor=GTBlue}
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\small GraphTrust · Publication Figures}
+\rhead{\small SEIB-2026}
+\cfoot{\thepage}
+\captionsetup{font=small,labelfont=bf,skip=2pt}
+\setlength{\parindent}{0pt}
+
+\newcommand{\figpair}[6]{%
+  \begin{figure}[!ht]
+  \centering
+  \includegraphics[width=0.92\linewidth,height=0.40\textheight,keepaspectratio]{#1}
+  \caption{#2}\label{#3}
+  \vfill
+  \includegraphics[width=0.92\linewidth,height=0.40\textheight,keepaspectratio]{#4}
+  \caption{#5}\label{#6}
+  \end{figure}
+  \clearpage
+}
+
+\begin{document}
+\begin{center}
+{\LARGE\bfseries GraphTrust Publication Figure Set}\par
+\vspace{3pt}
+{\large Baktiyar Ablaikhan · NSRI Summer Research Hackathon 2026}\par
+\end{center}
+
+\figpair{figures/01_system_architecture.png}{Evidence-preserving GraphTrust analysis pipeline.}{fig:architecture}{figures/02_heterogeneous_schema.png}{Canonical heterogeneous identity graph and two transitive routes.}{fig:schema}
+\figpair{figures/03_explainable_path.png}{Highest-ranked evidence-linked privilege path.}{fig:hero}{figures/04_detection_recall.png}{Detection recall with graph-level bootstrap intervals.}{fig:recall}
+\figpair{figures/05_ranking_quality.png}{Top-ranked relevance across the five audit methods.}{fig:ranking}{figures/06_remediation_frontier.png}{Remediation cost, exposure reduction, and post-check state.}{fig:remediation}
+\figpair{figures/07_runtime_memory_scaling.png}{Runtime and peak resident-memory scaling.}{fig:runtime}{figures/08_ztri_distribution.png}{GraphTrust ZTRI distributions across enterprise profiles.}{fig:ztri}
+\figpair{figures/09_ablation_results.png}{Ablation study on the preregistered verification graph.}{fig:ablation}{figures/10_sensitivity_rank_stability.png}{One-at-a-time and 1,000-sample weight sensitivity.}{fig:sensitivity}
+\figpair{figures/11_profile_method_heatmap.png}{Risky-identity recall by enterprise structure.}{fig:heatmap}{figures/12_paired_differences.png}{Paired GraphTrust differences against each baseline.}{fig:paired}
+\end{document}

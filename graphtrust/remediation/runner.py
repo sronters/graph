@@ -45,7 +45,11 @@ def run_remediation_methods(
                     maximum_depth=maximum_depth,
                 )
             elif solver is SolverName.MIN_CUT:
-                plan = solve_weighted_min_cut(problem, maximum_depth=maximum_depth)
+                plan = solve_weighted_min_cut(
+                    problem,
+                    target_fraction=target,
+                    maximum_depth=maximum_depth,
+                )
             else:
                 plan = solve_with_constraint_generation(
                     problem,

@@ -309,6 +309,14 @@ def test_all_remediation_methods_share_target_protocol() -> None:
     assert all(run.plan.protected_workflows_preserved for run in runs)
 
 
+def test_min_cut_verifies_partial_target_against_blocked_findings() -> None:
+    """A partial target must use the same blocked-finding protocol as other solvers."""
+    problem = remediation_problem(findings_only_direct_low=True)
+    plan = solve_weighted_min_cut(problem, target_fraction=0.5, maximum_depth=4)
+    assert len(plan.blocked_path_ids) / len(problem.findings) >= 0.5
+    assert plan.counterfactual_verified
+
+
 def test_business_requirement_filters_capability_before_path_cap() -> None:
     """A lexically earlier distractor route must not hide a protected capability."""
     base = remediation_problem()

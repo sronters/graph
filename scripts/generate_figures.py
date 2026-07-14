@@ -9,14 +9,47 @@ from typing import Any
 import matplotlib.pyplot as plt
 import numpy as np
 import polars as pl
+from matplotlib.lines import Line2D
+from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
 
 from graphtrust.experiments.reporting import load_run_rows
 
-COLORS = ("#0072B2", "#E69F00", "#009E73", "#CC79A7", "#56B4E9", "#D55E00")
+COLORS = ("#2563EB", "#F59E0B", "#10B981", "#A855F7", "#06B6D4", "#EF4444")
+INK = "#172033"
+MUTED = "#64748B"
+PAPER = "#F8FAFC"
+METHOD_ORDER = ("direct", "privileged", "untyped", "native_scope", "graphtrust")
+METHOD_LABELS = {
+    "direct": "Direct",
+    "privileged": "Privileged-only",
+    "untyped": "Untyped graph",
+    "native_scope": "Native scope",
+    "graphtrust": "GraphTrust",
+}
+METHOD_COLORS = dict(zip(METHOD_ORDER, COLORS, strict=False))
+
+plt.rcParams.update(
+    {
+        "font.family": "DejaVu Sans",
+        "font.size": 10,
+        "axes.titlesize": 15,
+        "axes.titleweight": "bold",
+        "axes.labelcolor": INK,
+        "axes.edgecolor": "#CBD5E1",
+        "axes.linewidth": 0.8,
+        "xtick.color": MUTED,
+        "ytick.color": MUTED,
+        "text.color": INK,
+        "figure.facecolor": PAPER,
+        "axes.facecolor": PAPER,
+        "savefig.facecolor": PAPER,
+    }
+)
 
 
 def save_figure(figure: plt.Figure, output: Path, name: str) -> None:
     output.mkdir(parents=True, exist_ok=True)
+    figure.text(0.995, 0.008, "GraphTrust · SEIB-2026", ha="right", fontsize=6.5, color="#94A3B8")
     figure.savefig(output / f"{name}.svg", bbox_inches="tight")
     figure.savefig(output / f"{name}.png", dpi=300, bbox_inches="tight")
     plt.close(figure)
@@ -31,37 +64,79 @@ def unavailable_figure(output: Path, name: str, title: str, reason: str) -> None
 
 
 def architecture_figure(output: Path) -> None:
-    figure, axis = plt.subplots(figsize=(12, 4.8))
+    figure, axis = plt.subplots(figsize=(13, 5.2))
     axis.axis("off")
     labels = (
-        "Canonical\nParquet",
-        "Semantic\ncompiler",
-        "Typed capability\ngraph",
-        "Bounded path\nanalysis",
-        "Verified\nremediation",
-        "API + research\nartifacts",
+        ("01", "Raw IAM evidence", "Parquet + provenance"),
+        ("02", "Semantic compiler", "provider-aware rules"),
+        ("03", "Capability graph", "typed + conditional"),
+        ("04", "Path analytics", "bounded and ranked"),
+        ("05", "Remediation", "cut + counterfactual"),
+        ("06", "Evidence package", "API · tables · figures"),
     )
-    for index, label in enumerate(labels):
-        x = 0.02 + index * 0.165
+    for index, (number, label, detail) in enumerate(labels):
+        x = 0.018 + index * 0.164
+        color = COLORS[index % len(COLORS)]
         axis.add_patch(
-            plt.Rectangle((x, 0.38), 0.135, 0.24, facecolor="#E5F1EF", edgecolor="#0F766E")
-        )
-        axis.text(x + 0.0675, 0.50, label, ha="center", va="center", fontsize=10)
-        if index < len(labels) - 1:
-            axis.annotate(
-                "",
-                (x + 0.16, 0.50),
-                (x + 0.137, 0.50),
-                arrowprops={"arrowstyle": "->", "color": "#555555"},
+            FancyBboxPatch(
+                (x, 0.34),
+                0.14,
+                0.31,
+                boxstyle="round,pad=0.012,rounding_size=0.025",
+                facecolor="white",
+                edgecolor="#E2E8F0",
+                linewidth=1.2,
             )
-    axis.text(0.5, 0.82, "GraphTrust system architecture", ha="center", fontsize=16, weight="bold")
+        )
+        axis.add_patch(
+            FancyBboxPatch(
+                (x + 0.012, 0.565),
+                0.036,
+                0.056,
+                boxstyle="round,pad=0.004,rounding_size=0.01",
+                facecolor=color,
+                edgecolor=color,
+            )
+        )
+        axis.text(
+            x + 0.030,
+            0.592,
+            number,
+            color="white",
+            weight="bold",
+            ha="center",
+            va="center",
+            fontsize=8,
+        )
+        axis.text(x + 0.07, 0.49, label, ha="center", va="center", fontsize=10, weight="bold")
+        axis.text(x + 0.07, 0.405, detail, ha="center", va="center", fontsize=7.5, color=MUTED)
+        if index < len(labels) - 1:
+            axis.add_patch(
+                FancyArrowPatch(
+                    (x + 0.142, 0.5),
+                    (x + 0.166, 0.5),
+                    arrowstyle="-|>",
+                    mutation_scale=12,
+                    linewidth=1.1,
+                    color="#94A3B8",
+                )
+            )
+    axis.text(
+        0.5,
+        0.86,
+        "From raw entitlements to verified recommendations",
+        ha="center",
+        fontsize=18,
+        weight="bold",
+    )
     axis.text(
         0.5,
         0.16,
         "Truth is joined only after inference for evaluation; "
         "the browser cannot submit graph queries.",
         ha="center",
-        fontsize=9,
+        fontsize=9.5,
+        color=MUTED,
     )
     save_figure(figure, output, "01_system_architecture")
 
@@ -70,36 +145,57 @@ def schema_figure(output: Path) -> None:
     figure, axis = plt.subplots(figsize=(10, 6))
     axis.axis("off")
     nodes = {
-        "Human": (0.1, 0.75),
-        "Group": (0.32, 0.75),
-        "Role": (0.54, 0.75),
-        "Service / workload": (0.1, 0.3),
-        "Pipeline": (0.38, 0.3),
-        "Critical asset": (0.72, 0.5),
+        "Human": (0.10, 0.72, COLORS[0]),
+        "Group": (0.32, 0.78, COLORS[4]),
+        "Role": (0.55, 0.72, COLORS[3]),
+        "Service\nidentity": (0.15, 0.28, COLORS[2]),
+        "CI/CD\npipeline": (0.42, 0.25, COLORS[1]),
+        "Critical\nasset": (0.78, 0.50, COLORS[5]),
     }
-    for label, (x, y) in nodes.items():
-        axis.add_patch(plt.Circle((x, y), 0.075, facecolor="#F4E4BE", edgecolor="#8A5A00"))
-        axis.text(x, y, label, ha="center", va="center", fontsize=8)
+    for label, (x, y, color) in nodes.items():
+        axis.add_patch(
+            plt.Circle((x, y), 0.078, facecolor=color, edgecolor="white", linewidth=2.2, alpha=0.94)
+        )
+        axis.text(x, y, label, ha="center", va="center", fontsize=8.5, color="white", weight="bold")
     edges = (
         ("Human", "Group", "member of"),
         ("Group", "Role", "assigned role"),
-        ("Role", "Critical asset", "capability"),
-        ("Human", "Service / workload", "impersonates"),
-        ("Service / workload", "Pipeline", "runs as"),
-        ("Pipeline", "Critical asset", "deploys / writes"),
+        ("Role", "Critical\nasset", "capability"),
+        ("Human", "Service\nidentity", "impersonates"),
+        ("Service\nidentity", "CI/CD\npipeline", "runs as"),
+        ("CI/CD\npipeline", "Critical\nasset", "deploys / writes"),
     )
     for source, target, label in edges:
-        start, end = nodes[source], nodes[target]
+        start, end = nodes[source][:2], nodes[target][:2]
         axis.annotate(
             label,
             end,
             start,
             ha="center",
             fontsize=7,
-            arrowprops={"arrowstyle": "->", "color": "#0072B2"},
+            arrowprops={
+                "arrowstyle": "-|>",
+                "color": "#64748B",
+                "lw": 1.2,
+                "connectionstyle": "arc3,rad=0.08",
+            },
         )
     axis.text(
-        0.5, 0.94, "Canonical heterogeneous graph schema", ha="center", fontsize=16, weight="bold"
+        0.5,
+        0.94,
+        "Two hidden routes to one critical asset",
+        ha="center",
+        fontsize=17,
+        weight="bold",
+    )
+    axis.text(
+        0.5,
+        0.08,
+        "Every effective transition retains the raw IAM evidence "
+        "and semantic rule that produced it.",
+        ha="center",
+        fontsize=9,
+        color=MUTED,
     )
     save_figure(figure, output, "02_heterogeneous_schema")
 
@@ -119,68 +215,133 @@ def bar_metric(
     if not rows:
         unavailable_figure(output, name, title, "No verified experiment runs are available.")
         return
-    methods = sorted({str(row["method"]) for row in rows})
-    x = np.arange(len(methods))
-    figure, axis = plt.subplots(figsize=(9, 5))
-    width = 0.8 / len(metrics)
+    methods = [method for method in METHOD_ORDER if any(row["method"] == method for row in rows)]
+    y = np.arange(len(methods))
+    figure, axis = plt.subplots(figsize=(10, 5.6))
     for metric_index, metric in enumerate(metrics):
         means: list[float] = []
-        errors: list[list[float]] = [[], []]
+        lowers: list[float] = []
+        uppers: list[float] = []
         for method in methods:
             values = np.array([float(row[metric]) for row in rows if row["method"] == method])
             mean = float(values.mean())
             lower, upper = bootstrap_interval(values)
             means.append(mean)
-            errors[0].append(mean - lower)
-            errors[1].append(upper - mean)
-        axis.bar(
-            x + (metric_index - (len(metrics) - 1) / 2) * width,
+            lowers.append(lower)
+            uppers.append(upper)
+        offset = (metric_index - (len(metrics) - 1) / 2) * 0.18
+        axis.errorbar(
             means,
-            width,
-            label=metric.replace("_", " "),
+            y + offset,
+            xerr=np.array(
+                [
+                    [mean - lower for mean, lower in zip(means, lowers, strict=True)],
+                    [u - m for m, u in zip(means, uppers, strict=True)],
+                ]
+            ),
+            fmt="o",
+            markersize=8,
+            linewidth=2,
+            capsize=4,
+            label=metric.replace("_", " ").title(),
             color=COLORS[metric_index],
-            yerr=np.array(errors),
-            capsize=3,
+            markeredgecolor="white",
+            markeredgewidth=1,
         )
-    axis.set_xticks(x, [method.replace("_", "\n") for method in methods])
-    axis.set_ylim(0, 1.05)
-    axis.set_ylabel("Metric value")
+    axis.set_yticks(y, [METHOD_LABELS[m] for m in methods])
+    axis.set_xlim(-0.02, 1.02)
+    axis.set_xlabel("Mean across paired enterprise graphs · 95% bootstrap CI")
     axis.set_title(title)
     axis.legend(frameon=False)
-    axis.grid(axis="y", alpha=0.2)
+    axis.grid(axis="x", alpha=0.22)
+    axis.spines[["top", "right", "left"]].set_visible(False)
+    axis.invert_yaxis()
     save_figure(figure, output, name)
 
 
 def example_path_figure(runs_root: Path, output: Path) -> None:
+    candidates: list[tuple[float, Path, str]] = []
     for directory in sorted(path for path in runs_root.glob("run-*") if path.is_dir()):
-        paths = pl.read_parquet(directory / "paths.parquet")
-        if paths.is_empty():
+        predictions = pl.read_parquet(directory / "predictions.parquet")
+        if predictions.is_empty() or predictions[0, "method"] != "graphtrust":
             continue
-        finding_id = str(paths[0, "finding_id"])
+        top = predictions.sort("path_risk", descending=True).row(0, named=True)
+        candidates.append((float(top["path_risk"]), directory, str(top["finding_id"])))
+    for risk, directory, finding_id in sorted(candidates, reverse=True):
+        paths = pl.read_parquet(directory / "paths.parquet")
         selected = paths.filter(pl.col("finding_id") == finding_id).sort("position")
-        figure, axis = plt.subplots(figsize=(12, 4.5))
+        if selected.is_empty():
+            continue
+        steps = selected.to_dicts()
+        node_ids = [str(steps[0]["actor_before"])] + [str(row["target_id"]) for row in steps]
+        figure, axis = plt.subplots(figsize=(13, 5.8))
         axis.axis("off")
-        for index, row in enumerate(selected.iter_rows(named=True)):
-            x = 0.05 + index * (0.9 / max(1, selected.height))
-            axis.text(x, 0.66, str(row["actor_before"]), fontsize=8, ha="center", wrap=True)
-            axis.annotate(
-                str(row["transition_type"]),
-                (x + 0.1, 0.5),
-                (x, 0.5),
-                fontsize=7,
-                arrowprops={"arrowstyle": "->", "color": COLORS[index % len(COLORS)]},
+        xs = np.linspace(0.08, 0.92, len(node_ids))
+        for index, (x, node_id) in enumerate(zip(xs, node_ids, strict=True)):
+            color = COLORS[5] if index == len(node_ids) - 1 else COLORS[index % 5]
+            axis.add_patch(plt.Circle((x, 0.5), 0.052, color=color, ec="white", lw=2.5, zorder=3))
+            role = (
+                "CRITICAL ASSET"
+                if index == len(node_ids) - 1
+                else ("START IDENTITY" if index == 0 else f"HOP {index}")
             )
-            axis.text(x + 0.1, 0.34, str(row["target_id"]), fontsize=8, ha="center", wrap=True)
+            axis.text(x, 0.59, role, ha="center", fontsize=7, color=color, weight="bold")
+            short = node_id if len(node_id) <= 24 else node_id[:11] + "…" + node_id[-10:]
+            axis.text(x, 0.39, short, ha="center", va="top", fontsize=7.3, color=INK)
+        for index, row in enumerate(steps):
+            left, right = xs[index], xs[index + 1]
+            axis.add_patch(
+                FancyArrowPatch(
+                    (left + 0.053, 0.5),
+                    (right - 0.053, 0.5),
+                    arrowstyle="-|>",
+                    mutation_scale=16,
+                    linewidth=3.2,
+                    color="#334155",
+                    zorder=2,
+                )
+            )
+            transition = str(row["transition_type"]).replace("_", " ")
+            axis.text(
+                (left + right) / 2,
+                0.535,
+                transition,
+                ha="center",
+                fontsize=7.2,
+                weight="bold",
+                color="#334155",
+            )
+            axis.text(
+                (left + right) / 2,
+                0.455,
+                f"exploitability {float(row['relative_exploitability']):.2f}",
+                ha="center",
+                fontsize=6.8,
+                color=MUTED,
+            )
         axis.text(
             0.5,
-            0.92,
-            "Explainable path with ordered semantic transitions",
+            0.91,
+            "Highest-ranked hidden privilege path",
             ha="center",
-            fontsize=15,
+            fontsize=18,
             weight="bold",
         )
         axis.text(
-            0.5, 0.08, f"Finding {finding_id} · run {directory.name}", ha="center", fontsize=8
+            0.5,
+            0.82,
+            f"Relative path risk {risk:.3f} · every hop maps back to raw IAM evidence",
+            ha="center",
+            fontsize=10,
+            color=MUTED,
+        )
+        axis.text(
+            0.5,
+            0.10,
+            f"Finding {finding_id} · immutable run {directory.name}",
+            ha="center",
+            fontsize=7.5,
+            color="#94A3B8",
         )
         save_figure(figure, output, "03_explainable_path")
         return
@@ -195,6 +356,16 @@ def remediation_figure(artifact_root: Path, output: Path, tables: Path) -> None:
         value = json.loads(path.read_text(encoding="utf-8"))
         if isinstance(value, list):
             plans.extend({"source_artifact": str(path), **plan} for plan in value)
+    deduplicated: dict[str, dict[str, Any]] = {}
+    for plan in plans:
+        plan_id = str(plan.get("plan_id", plan.get("source_artifact")))
+        previous = deduplicated.get(plan_id)
+        if previous is None or (
+            bool(plan.get("counterfactual_verified"))
+            and not bool(previous.get("counterfactual_verified"))
+        ):
+            deduplicated[plan_id] = plan
+    plans = list(deduplicated.values())
     csv_plans = [
         {
             key: (
@@ -217,60 +388,121 @@ def remediation_figure(artifact_root: Path, output: Path, tables: Path) -> None:
             "No verified remediation plans are available.",
         )
         return
-    figure, axis = plt.subplots(figsize=(8, 5))
-    for solver, values in defaultdict(
-        list,
-        {
-            solver: [plan for plan in plans if plan.get("solver") == solver]
-            for solver in {plan.get("solver") for plan in plans}
-        },
-    ).items():
-        axis.scatter(
-            [float(plan["modeled_cost"]) for plan in values],
-            [1 - float(plan["residual_exposure"]) for plan in values],
-            label=solver,
-        )
+    figure, axis = plt.subplots(figsize=(9.6, 6))
+    solvers = sorted({str(plan.get("solver")) for plan in plans})
+    for index, solver in enumerate(solvers):
+        values = [plan for plan in plans if plan.get("solver") == solver]
+        for plan in values:
+            verified = bool(plan.get("counterfactual_verified", False))
+            x = float(plan["modeled_cost"])
+            y = 1 - float(plan["residual_exposure"])
+            axis.scatter(
+                x,
+                y,
+                s=155,
+                color=COLORS[index % len(COLORS)] if verified else "white",
+                edgecolor=COLORS[index % len(COLORS)],
+                linewidth=2.2,
+                marker="o" if verified else "X",
+                zorder=3,
+            )
+            axis.annotate(
+                f"{solver.replace('_', ' ')}\n{len(plan.get('removed_edge_ids', []))} changes",
+                (x, y),
+                xytext=(7, 8),
+                textcoords="offset points",
+                fontsize=7.5,
+                color=INK,
+            )
+    legend = [
+        Line2D(
+            [0],
+            [0],
+            marker="o",
+            color="none",
+            markerfacecolor=INK,
+            markeredgecolor=INK,
+            markersize=8,
+            label="counterfactually verified",
+        ),
+        Line2D(
+            [0],
+            [0],
+            marker="X",
+            color="none",
+            markerfacecolor="white",
+            markeredgecolor=INK,
+            markersize=8,
+            label="failed post-check",
+        ),
+    ]
     axis.set_xlabel("Modeled business-removal cost")
     axis.set_ylabel("Exposure reduction")
-    axis.set_title("Remediation cost versus exposure reduction")
-    axis.legend(frameon=False)
+    axis.set_title("Cost-exposure frontier after applying proposed IAM changes")
+    axis.legend(handles=legend, frameon=False, loc="lower right")
     axis.grid(alpha=0.2)
+    axis.spines[["top", "right"]].set_visible(False)
     save_figure(figure, output, "06_remediation_frontier")
 
 
 def runtime_and_ztri(runs_root: Path, output: Path, tables: Path) -> None:
     runtime_rows: list[dict[str, Any]] = []
-    ztri: list[float] = []
+    ztri_by_profile: dict[str, list[float]] = defaultdict(list)
     for directory in sorted(runs_root.glob("run-*")):
         if not directory.is_dir():
             continue
         manifest = json.loads((directory / "dataset_manifest.json").read_text(encoding="utf-8"))
+        run_manifest = json.loads((directory / "run_manifest.json").read_text(encoding="utf-8"))
         timing = json.loads((directory / "timings.json").read_text(encoding="utf-8"))
         runtime_rows.append(
             {
                 "run_id": directory.name,
                 "scale": manifest["scale"],
+                "profile": manifest["profile"],
+                "method": run_manifest["method"],
                 "nodes": manifest["realized_counts"].get("nodes", 0),
                 **timing,
             }
         )
         scores = pl.read_parquet(directory / "identity_scores.parquet")
-        if "ztri" in scores.columns:
-            ztri.extend(float(value) for value in scores["ztri"].to_list())
+        if "ztri" in scores.columns and run_manifest["method"] == "graphtrust":
+            ztri_by_profile[str(manifest["profile"])].extend(
+                float(value) for value in scores["ztri"].to_list()
+            )
     if runtime_rows:
         pl.DataFrame(runtime_rows).write_csv(tables / "05_runtime_and_memory.csv")
-        figure, axis = plt.subplots(figsize=(8, 5))
-        axis.scatter(
-            [row["nodes"] for row in runtime_rows],
-            [row["inference_seconds"] for row in runtime_rows],
-            c=COLORS[0],
-        )
+        figure, axis = plt.subplots(figsize=(9.6, 5.8))
+        for method in METHOD_ORDER:
+            selected = [row for row in runtime_rows if row["method"] == method]
+            if not selected:
+                continue
+            axis.scatter(
+                [row["nodes"] for row in selected],
+                [row["inference_seconds"] for row in selected],
+                s=[max(28, float(row["peak_rss_mib"]) / 4) for row in selected],
+                c=METHOD_COLORS[method],
+                alpha=0.72,
+                edgecolors="white",
+                linewidths=0.7,
+                label=METHOD_LABELS[method],
+            )
         axis.set_xscale("log")
         axis.set_yscale("log")
         axis.set_xlabel("Nodes")
         axis.set_ylabel("Inference seconds")
-        axis.set_title("Runtime scaling (descriptive)")
+        axis.set_title("Runtime and peak-memory scaling")
         axis.grid(alpha=0.2)
+        axis.legend(frameon=False, ncols=2)
+        axis.text(
+            0.99,
+            0.02,
+            "Bubble area ∝ peak RSS",
+            transform=axis.transAxes,
+            ha="right",
+            fontsize=8,
+            color=MUTED,
+        )
+        axis.spines[["top", "right"]].set_visible(False)
         save_figure(figure, output, "07_runtime_memory_scaling")
     else:
         unavailable_figure(
@@ -282,12 +514,27 @@ def runtime_and_ztri(runs_root: Path, output: Path, tables: Path) -> None:
         (tables / "05_runtime_and_memory.csv").write_text(
             "run_id,scale,nodes,inference_seconds,peak_rss_mib\n", encoding="utf-8"
         )
-    if ztri:
-        figure, axis = plt.subplots(figsize=(8, 5))
-        axis.hist(ztri, bins=20, color=COLORS[2], edgecolor="white")
+    if ztri_by_profile:
+        figure, axis = plt.subplots(figsize=(9.6, 5.8))
+        bins = np.linspace(0, 100, 41)
+        for index, (profile, values) in enumerate(sorted(ztri_by_profile.items())):
+            axis.hist(
+                values,
+                bins=bins,
+                density=True,
+                histtype="stepfilled",
+                alpha=0.28,
+                color=COLORS[index],
+                label=profile.replace("_", " ").title(),
+            )
+            axis.hist(
+                values, bins=bins, density=True, histtype="step", linewidth=1.8, color=COLORS[index]
+            )
         axis.set_xlabel("ZTRI")
-        axis.set_ylabel("Identity count")
-        axis.set_title("Identity risk-component distribution")
+        axis.set_ylabel("Density")
+        axis.set_title("Whole-identity risk distributions by enterprise profile")
+        axis.legend(frameon=False)
+        axis.spines[["top", "right"]].set_visible(False)
         save_figure(figure, output, "08_ztri_distribution")
     else:
         unavailable_figure(
@@ -298,13 +545,120 @@ def runtime_and_ztri(runs_root: Path, output: Path, tables: Path) -> None:
         )
 
 
+def profile_method_heatmap(rows: list[dict[str, Any]], output: Path) -> None:
+    """Show whether method ordering changes across organization profiles."""
+    if not rows:
+        unavailable_figure(
+            output,
+            "11_profile_method_heatmap",
+            "Profile x method detection",
+            "No verified runs are available.",
+        )
+        return
+    profiles = sorted({str(row["profile"]) for row in rows})
+    methods = [method for method in METHOD_ORDER if any(row["method"] == method for row in rows)]
+    matrix = np.full((len(profiles), len(methods)), np.nan)
+    for i, profile in enumerate(profiles):
+        for j, method in enumerate(methods):
+            values = [
+                float(row["risky_starting_identity_recall"])
+                for row in rows
+                if row["profile"] == profile and row["method"] == method
+            ]
+            if values:
+                matrix[i, j] = float(np.mean(values))
+    figure, axis = plt.subplots(figsize=(10, 4.8))
+    image = axis.imshow(matrix, cmap="YlGnBu", vmin=0, vmax=1, aspect="auto")
+    for i in range(len(profiles)):
+        for j in range(len(methods)):
+            if np.isfinite(matrix[i, j]):
+                axis.text(
+                    j,
+                    i,
+                    f"{matrix[i, j]:.2f}",
+                    ha="center",
+                    va="center",
+                    color="white" if matrix[i, j] > 0.55 else INK,
+                    weight="bold",
+                    fontsize=9,
+                )
+    axis.set_xticks(
+        range(len(methods)), [METHOD_LABELS[m] for m in methods], rotation=18, ha="right"
+    )
+    axis.set_yticks(range(len(profiles)), [p.replace("_", " ").title() for p in profiles])
+    axis.set_title("Risky-identity recall changes with enterprise structure")
+    figure.colorbar(image, ax=axis, label="Mean recall", fraction=0.025, pad=0.03)
+    save_figure(figure, output, "11_profile_method_heatmap")
+
+
+def paired_difference_figure(rows: list[dict[str, Any]], output: Path) -> None:
+    """Plot graph-level paired differences instead of only aggregate rankings."""
+    by_key: dict[tuple[object, ...], dict[str, float]] = defaultdict(dict)
+    for row in rows:
+        key = (row["profile"], row["scale"], row["seed"], row["variant"])
+        by_key[key][str(row["method"])] = float(row["risky_starting_identity_recall"])
+    baselines = [method for method in METHOD_ORDER if method != "graphtrust"]
+    differences = {
+        baseline: [
+            methods["graphtrust"] - methods[baseline]
+            for methods in by_key.values()
+            if "graphtrust" in methods and baseline in methods
+        ]
+        for baseline in baselines
+    }
+    if not any(differences.values()):
+        unavailable_figure(
+            output,
+            "12_paired_differences",
+            "Paired GraphTrust differences",
+            "Complete paired runs are not yet available.",
+        )
+        return
+    figure, axis = plt.subplots(figsize=(9.6, 5.8))
+    rng = np.random.default_rng(104729)
+    for index, baseline in enumerate(baselines):
+        values = np.asarray(differences[baseline], dtype=float)
+        if not values.size:
+            continue
+        jitter = rng.uniform(-0.11, 0.11, size=values.size)
+        axis.scatter(
+            np.full(values.size, index) + jitter,
+            values,
+            s=28,
+            alpha=0.38,
+            color=METHOD_COLORS[baseline],
+            edgecolor="none",
+        )
+        median = float(np.median(values))
+        axis.plot(
+            [index - 0.23, index + 0.23],
+            [median, median],
+            color=INK,
+            lw=3.2,
+            solid_capstyle="round",
+        )
+        axis.text(
+            index, median + 0.035, f"median {median:+.2f}", ha="center", fontsize=8, weight="bold"
+        )
+    axis.axhline(0, color="#475569", lw=1.2, ls="--")
+    axis.set_xticks(range(len(baselines)), [f"vs {METHOD_LABELS[b]}" for b in baselines])
+    axis.set_ylabel("Paired difference in risky-identity recall")
+    axis.set_title("Where GraphTrust gains—and where it does not")
+    axis.grid(axis="y", alpha=0.18)
+    axis.spines[["top", "right", "left"]].set_visible(False)
+    save_figure(figure, output, "12_paired_differences")
+
+
 def extended_figures(artifact_root: Path, output: Path, tables: Path) -> None:
     ablations: list[dict[str, Any]] = []
     sensitivity: list[dict[str, Any]] = []
+    dirichlet: list[dict[str, Any]] = []
     for path in artifact_root.glob("extended/extended-*/ablation_results.json"):
         ablations.extend(json.loads(path.read_text(encoding="utf-8")))
     for path in artifact_root.glob("extended/extended-*/sensitivity_results.json"):
-        sensitivity.extend(json.loads(path.read_text(encoding="utf-8"))["one_at_a_time"])
+        loaded = json.loads(path.read_text(encoding="utf-8"))
+        sensitivity.extend(loaded["one_at_a_time"])
+        dirichlet.extend(loaded.get("dirichlet_1000", []))
     if ablations:
         table_rows = [
             {
@@ -315,7 +669,10 @@ def extended_figures(artifact_root: Path, output: Path, tables: Path) -> None:
             for row in ablations
         ]
         pl.DataFrame(table_rows).write_csv(tables / "06_ablation_results.csv")
-        figure, axis = plt.subplots(figsize=(9, 5))
+        figure, axes = plt.subplots(
+            1, 2, figsize=(11.5, 5.2), gridspec_kw={"width_ratios": [1.35, 1]}
+        )
+        axis = axes[0]
         axis.barh(
             [row["name"].replace("_", " ") for row in table_rows],
             [row["scenario_f1"] for row in table_rows],
@@ -352,8 +709,25 @@ def extended_figures(artifact_root: Path, output: Path, tables: Path) -> None:
         )
         axis.set_ylim(-1.05, 1.05)
         axis.set_ylabel("Spearman rank correlation")
-        axis.set_title("Sensitivity and rank stability")
+        axis.set_title("One-at-a-time perturbations")
         axis.grid(axis="y", alpha=0.2)
+        distribution = axes[1]
+        if dirichlet:
+            values = [float(row["spearman"]) for row in dirichlet]
+            distribution.hist(values, bins=28, color=COLORS[3], alpha=0.78, edgecolor="white")
+            distribution.axvline(
+                float(np.median(values)),
+                color=INK,
+                lw=2,
+                ls="--",
+                label=f"median {np.median(values):.2f}",
+            )
+            distribution.set_xlabel("Spearman rank correlation")
+            distribution.set_ylabel("Dirichlet samples")
+            distribution.set_title("1,000 random ZTRI weights")
+            distribution.legend(frameon=False)
+            distribution.spines[["top", "right"]].set_visible(False)
+        figure.suptitle("Sensitivity and ranking stability", fontsize=15, weight="bold")
         save_figure(figure, output, "10_sensitivity_rank_stability")
     else:
         unavailable_figure(
@@ -481,6 +855,8 @@ def main() -> None:
     remediation_figure(artifact_root, arguments.output, tables)
     runtime_and_ztri(arguments.runs, arguments.output, tables)
     extended_figures(artifact_root, arguments.output, tables)
+    profile_method_heatmap(rows, arguments.output)
+    paired_difference_figure(rows, arguments.output)
     print(arguments.output)
 
 

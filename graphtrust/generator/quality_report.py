@@ -19,26 +19,35 @@ def _group_cycles(edges: Sequence[dict[str, object]]) -> tuple[tuple[str, ...], 
             adjacency[str(edge["source_id"])].append(str(edge["target_id"]))
     active: set[str] = set()
     complete: set[str] = set()
-    stack: list[str] = []
     cycles: set[tuple[str, ...]] = set()
 
-    def visit(node_id: str) -> None:
-        if node_id in complete:
-            return
-        if node_id in active:
-            start = stack.index(node_id)
-            cycles.add(tuple([*stack[start:], node_id]))
-            return
-        active.add(node_id)
-        stack.append(node_id)
-        for target_id in adjacency.get(node_id, []):
-            visit(target_id)
-        stack.pop()
-        active.remove(node_id)
-        complete.add(node_id)
-
     for node_id in sorted(adjacency):
-        visit(node_id)
+        if node_id in complete:
+            continue
+        path: list[str] = [node_id]
+        path_index = {node_id: 0}
+        active.add(node_id)
+        stack: list[tuple[str, int]] = [(node_id, 0)]
+        while stack:
+            current, neighbor_index = stack[-1]
+            neighbors = adjacency.get(current, [])
+            if neighbor_index >= len(neighbors):
+                stack.pop()
+                active.remove(current)
+                complete.add(current)
+                path_index.pop(current, None)
+                path.pop()
+                continue
+            target = neighbors[neighbor_index]
+            stack[-1] = (current, neighbor_index + 1)
+            if target in active:
+                start = path_index[target]
+                cycles.add(tuple([*path[start:], target]))
+            elif target not in complete:
+                path_index[target] = len(path)
+                path.append(target)
+                active.add(target)
+                stack.append((target, 0))
     return tuple(sorted(cycles))
 
 
@@ -47,20 +56,24 @@ def _nesting_depth(edges: Sequence[dict[str, object]]) -> int:
     for edge in edges:
         if edge["edge_type"] == "NESTED_IN" and edge["active"]:
             adjacency[str(edge["source_id"])].append(str(edge["target_id"]))
-    cache: dict[str, int] = {}
-
-    def depth(node_id: str, visiting: frozenset[str]) -> int:
-        if node_id in visiting:
-            return 0
-        if node_id in cache:
-            return cache[node_id]
-        value = 0
-        if adjacency.get(node_id):
-            value = 1 + max(depth(target, visiting | {node_id}) for target in adjacency[node_id])
-        cache[node_id] = value
-        return value
-
-    return max((depth(node_id, frozenset()) for node_id in adjacency), default=0)
+    nodes = set(adjacency)
+    nodes.update(target for targets in adjacency.values() for target in targets)
+    indegree = {node_id: 0 for node_id in nodes}
+    for targets in adjacency.values():
+        for target in targets:
+            indegree[target] += 1
+    frontier = sorted(node_id for node_id, degree in indegree.items() if degree == 0)
+    distances = {node_id: 0 for node_id in nodes}
+    cursor = 0
+    while cursor < len(frontier):
+        node_id = frontier[cursor]
+        cursor += 1
+        for target in adjacency.get(node_id, []):
+            distances[target] = max(distances[target], distances[node_id] + 1)
+            indegree[target] -= 1
+            if indegree[target] == 0:
+                frontier.append(target)
+    return max(distances.values(), default=0)
 
 
 def _component_counts(

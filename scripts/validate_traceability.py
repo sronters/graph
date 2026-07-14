@@ -18,6 +18,8 @@ FIGURES = (
     "08_ztri_distribution",
     "09_ablation_results",
     "10_sensitivity_rank_stability",
+    "11_profile_method_heatmap",
+    "12_paired_differences",
 )
 TABLES = (
     "01_dataset_statistics.csv",

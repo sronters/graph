@@ -18,9 +18,12 @@ from graphtrust.schemas.remediation import RemediationPlan, SolverName, SolverSt
 def solve_weighted_min_cut(
     problem: RemediationProblem,
     *,
+    target_fraction: float = 1.0,
     maximum_depth: int = 8,
 ) -> RemediationPlan:
     """Solve the modeled weighted cut and verify it on the capability graph."""
+    if not 0 < target_fraction <= 1:
+        raise ValueError("target_fraction must be in (0, 1]")
     started = time.perf_counter()
     removable = problem.removable_edges()
     finite_total = sum(edge.business_removal_cost for edge in removable.values())
@@ -74,6 +77,8 @@ def solve_weighted_min_cut(
         maximum_depth=maximum_depth,
     )
     business = verify_business_requirements(problem, removed)
+    blocked_ids = blocked_finding_ids(problem, removed)
+    blocked_fraction = len(blocked_ids) / len(problem.findings) if problem.findings else 1.0
     raw_by_id = problem.raw_edge_by_id
     modeled_cost = sum(raw_by_id[edge_id].business_removal_cost for edge_id in removed)
     affected = tuple(
@@ -85,7 +90,10 @@ def solve_weighted_min_cut(
             }
         )
     )
-    verified = reachability.verified and business.valid
+    target_verified = (
+        reachability.verified if target_fraction == 1.0 else blocked_fraction >= target_fraction
+    )
+    verified = target_verified and business.valid
     caveats = [
         "Recommendation only; no live permission changes are executed.",
         "Optimality is relative to modeled costs and constraints.",
@@ -111,7 +119,7 @@ def solve_weighted_min_cut(
         status=status,
         removed_edge_ids=removed,
         modeled_cost=modeled_cost,
-        blocked_path_ids=blocked_finding_ids(problem, removed),
+        blocked_path_ids=blocked_ids,
         residual_exposure=max(0.0, 1.0 - exposure_reduction(problem, removed)),
         affected_departments=affected,
         protected_workflows_preserved=business.valid,
