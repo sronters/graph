@@ -30,6 +30,8 @@ B0 examines direct entitlements, B1 privileged identities, B2 untyped shortest p
 
 No final result is asserted. The full `(3 profiles × 2 scales × 5 final seeds × 3 variants × 5 methods)` preregistered matrix has not yet been verified as a complete immutable artifact set, and large Colab runs are unexecuted in this branch. The reporting code computes paired bootstrap 95% intervals, exact McNemar tests, Friedman/Wilcoxon-Holm comparisons, and effect sizes only from saved run IDs. Figures with unavailable evidence say so explicitly rather than substituting synthetic headline numbers.
 
+One five-method development smoke unit completed and is retained as a pipeline diagnostic. GraphTrust had risky-source recall 0.75, scenario F1 0.00651, and NDCG@10 0.14273; native-scope had recall 0.4167, scenario F1 0.02681, and NDCG@10 0.15022. Thus this unit does not show a general GraphTrust advantage. With `n=1`, no inferential comparison is valid; exact run IDs and checksums are listed in `docs/verification_status.md`.
+
 ## Explainability example
 
 For every stored path, the explanation reproduces the exact ordered effective steps, condition states, named compiler rules, and raw evidence IDs. Its score panel shows starting exposure, target criticality, each transition cost, and final bounded relative risk. This makes a ranking auditable without presenting it as a breach probability.

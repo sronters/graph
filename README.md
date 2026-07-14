@@ -70,4 +70,4 @@ npm --prefix frontend run test
 npm --prefix frontend run build
 ```
 
-Use [CITATION.cff](CITATION.cff) and cite the exact dataset manifest and experiment run IDs used in a result. The current evidence status is recorded in [the research brief](docs/research_brief.md); absent full artifacts, no comparative empirical conclusion is asserted.
+Use [CITATION.cff](CITATION.cff) and cite the exact dataset manifest and experiment run IDs used in a result. The current evidence status is recorded in the [verification ledger](docs/verification_status.md) and [research brief](docs/research_brief.md); absent full artifacts, no comparative empirical conclusion is asserted.
