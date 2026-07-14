@@ -1,0 +1,14 @@
+{
+  "broad_cross_tenant_trust": 1,
+  "ci_pipeline_overprivileged_service_account": 1,
+  "developer_indirect_production_role_assumption": 1,
+  "dormant_contractor_nested_deployment_group": 1,
+  "edge_disjoint_low_severity_paths": 2,
+  "external_identity_federated_group_chain": 1,
+  "legacy_group_nested_into_privileged_group": 1,
+  "repository_maintainer_controls_production_pipeline": 1,
+  "shared_service_account_cross_department_bridge": 1,
+  "staging_identity_inherits_production_scope": 1,
+  "application_owner_modifies_critical_role_binding": 1,
+  "workload_impersonates_privileged_service_account": 1
+}

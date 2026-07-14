@@ -8,6 +8,8 @@ import typer
 
 from graphtrust import __version__
 from graphtrust.data import read_dataset, validate_bundle
+from graphtrust.generator.models import SCALE_SPECS
+from graphtrust.generator.runner import SUPPORTED_VARIANTS, generate_dataset_suite
 
 app = typer.Typer(
     name="graphtrust",
@@ -68,6 +70,78 @@ def validate_data(
             typer.echo(f"Error: {validation_error}", err=True)
     if not report.valid:
         raise typer.Exit(code=1)
+
+
+@app.command("generate")
+def generate(
+    profile: Annotated[str, typer.Option("--profile")],
+    scale: Annotated[str, typer.Option("--scale")],
+    seed: Annotated[int, typer.Option("--seed")],
+    variants: Annotated[
+        str,
+        typer.Option(
+            "--variants",
+            help="Comma-separated paired variants.",
+        ),
+    ] = ",".join(SUPPORTED_VARIANTS),
+    output_root: Annotated[
+        Path,
+        typer.Option("--output-root", file_okay=False),
+    ] = Path("data/generated"),
+    dry_run: Annotated[bool, typer.Option("--dry-run")] = False,
+) -> None:
+    """Generate deterministic paired SEIB-2026 datasets."""
+    requested_variants = tuple(item.strip() for item in variants.split(",") if item.strip())
+    try:
+        if scale not in SCALE_SPECS:
+            raise ValueError(f"Unsupported scale: {scale}")
+        if dry_run:
+            spec = SCALE_SPECS[scale]
+            typer.echo(
+                json.dumps(
+                    {
+                        "dry_run": True,
+                        "profile": profile,
+                        "scale": scale,
+                        "seed": seed,
+                        "variants": requested_variants,
+                        "targets": {
+                            "humans": spec.humans,
+                            "non_humans": spec.non_humans,
+                            "groups_and_roles": spec.groups + spec.roles,
+                            "resources": spec.resources,
+                            "raw_edges": spec.raw_edges,
+                        },
+                    },
+                    sort_keys=True,
+                )
+            )
+            return
+        generated = generate_dataset_suite(
+            profile=profile,
+            scale=scale,
+            seed=seed,
+            variants=requested_variants,
+            output_root=output_root,
+        )
+    except (FileExistsError, OSError, ValueError) as generation_error:
+        typer.echo(f"Generation failed: {generation_error}", err=True)
+        raise typer.Exit(code=1) from generation_error
+    for dataset in generated:
+        typer.echo(
+            json.dumps(
+                {
+                    "dataset_id": dataset.dataset_id,
+                    "variant": dataset.variant,
+                    "path": str(dataset.destination),
+                    "tree_checksum": dataset.tree_checksum,
+                    "nodes": dataset.node_count,
+                    "edges": dataset.edge_count,
+                    "scenarios": dataset.scenario_count,
+                },
+                sort_keys=True,
+            )
+        )
 
 
 if __name__ == "__main__":
