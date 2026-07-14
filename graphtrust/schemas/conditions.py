@@ -81,8 +81,8 @@ class ConditionContext(StrictModel):
     authentication_strength: float | None = Field(default=None, ge=0, le=1)
     source_network_zone: str | None = None
     device_compliant: bool | None = None
-    resource_tags: dict[str, str] = Field(default_factory=dict)
-    principal_tags: dict[str, str] = Field(default_factory=dict)
+    resource_tags: dict[str, Any] = Field(default_factory=dict)
+    principal_tags: dict[str, Any] = Field(default_factory=dict)
     principal_tenant: str | None = None
     resource_tenant: str | None = None
     explicit_deny: bool | None = None

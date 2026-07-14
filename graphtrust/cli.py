@@ -7,9 +7,12 @@ from typing import Annotated
 import typer
 
 from graphtrust import __version__
+from graphtrust.analysis.pipeline import analyze_bundle
 from graphtrust.data import read_dataset, validate_bundle
 from graphtrust.generator.models import SCALE_SPECS
 from graphtrust.generator.runner import SUPPORTED_VARIANTS, generate_dataset_suite
+from graphtrust.schemas.findings import AnalysisMethod
+from graphtrust.settings import load_project_config
 
 app = typer.Typer(
     name="graphtrust",
@@ -127,21 +130,87 @@ def generate(
     except (FileExistsError, OSError, ValueError) as generation_error:
         typer.echo(f"Generation failed: {generation_error}", err=True)
         raise typer.Exit(code=1) from generation_error
-    for dataset in generated:
+    for generated_dataset in generated:
         typer.echo(
             json.dumps(
                 {
-                    "dataset_id": dataset.dataset_id,
-                    "variant": dataset.variant,
-                    "path": str(dataset.destination),
-                    "tree_checksum": dataset.tree_checksum,
-                    "nodes": dataset.node_count,
-                    "edges": dataset.edge_count,
-                    "scenarios": dataset.scenario_count,
+                    "dataset_id": generated_dataset.dataset_id,
+                    "variant": generated_dataset.variant,
+                    "path": str(generated_dataset.destination),
+                    "tree_checksum": generated_dataset.tree_checksum,
+                    "nodes": generated_dataset.node_count,
+                    "edges": generated_dataset.edge_count,
+                    "scenarios": generated_dataset.scenario_count,
                 },
                 sort_keys=True,
             )
         )
+
+
+@app.command("analyze")
+def analyze(
+    dataset: Annotated[Path, typer.Option("--dataset", exists=True, file_okay=False)],
+    methods: Annotated[
+        str,
+        typer.Option(
+            "--methods",
+            help="Comma-separated methods: direct, privileged, untyped, native_scope, graphtrust.",
+        ),
+    ] = ",".join(method.value for method in AnalysisMethod),
+    config: Annotated[
+        Path,
+        typer.Option("--config", exists=True, dir_okay=False),
+    ] = Path("configs/default.yaml"),
+    dry_run: Annotated[bool, typer.Option("--dry-run")] = False,
+) -> None:
+    """Compile IAM semantics and run truth-hidden analysis methods."""
+    try:
+        selected_methods = tuple(
+            AnalysisMethod(item.strip()) for item in methods.split(",") if item.strip()
+        )
+        if not selected_methods:
+            raise ValueError("At least one analysis method is required")
+        if len(set(selected_methods)) != len(selected_methods):
+            raise ValueError("Analysis methods must be unique")
+        bundle = read_dataset(dataset)
+        project_config = load_project_config(config)
+        if dry_run:
+            typer.echo(
+                json.dumps(
+                    {
+                        "dry_run": True,
+                        "dataset_id": bundle.manifest.dataset_id,
+                        "methods": [method.value for method in selected_methods],
+                        "backend": project_config.backend,
+                        "maximum_depth": project_config.analysis.maximum_depth,
+                    },
+                    sort_keys=True,
+                )
+            )
+            return
+        analysis = analyze_bundle(bundle, project_config, selected_methods)
+    except (FileNotFoundError, OSError, ValueError) as analysis_error:
+        typer.echo(f"Analysis failed: {analysis_error}", err=True)
+        raise typer.Exit(code=1) from analysis_error
+    typer.echo(
+        json.dumps(
+            {
+                "dataset_id": bundle.manifest.dataset_id,
+                "effective_edges": len(analysis.compilation.effective_edges),
+                "rejected_semantic_edges": len(analysis.compilation.rejected_edges),
+                "methods": {
+                    method.value: {
+                        "findings": len(result.findings),
+                        "risky_starting_identities": len(result.reachability),
+                        "search_complete": result.search_complete,
+                        "expanded_states": result.expanded_states,
+                    }
+                    for method, result in analysis.results.items()
+                },
+            },
+            sort_keys=True,
+        )
+    )
 
 
 if __name__ == "__main__":

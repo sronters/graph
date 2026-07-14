@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
+from graphtrust.graph.igraph_backend import IgraphBackend
 from graphtrust.graph.networkx_backend import NetworkXBackend
 from graphtrust.schemas.conditions import ConditionState
 from graphtrust.schemas.nodes import (
@@ -79,3 +80,35 @@ def test_removing_edges_cannot_increase_reachability(
     original_reachable = set(graph.reachable(("node:0",), maximum_depth=6))
     reduced_reachable = set(reduced.reachable(("node:0",), maximum_depth=6))
     assert reduced_reachable <= original_reachable
+
+
+@settings(max_examples=40, deadline=None)
+@given(
+    edge_pairs=st.lists(
+        st.tuples(st.integers(0, 5), st.integers(0, 5)).filter(lambda pair: pair[0] != pair[1]),
+        min_size=0,
+        max_size=12,
+        unique=True,
+    )
+)
+def test_networkx_and_igraph_reachable_pairs_are_identical(
+    edge_pairs: list[tuple[int, int]],
+) -> None:
+    nodes = tuple(graph_node(index) for index in range(6))
+    edges = tuple(
+        graph_edge(index, source, target) for index, (source, target) in enumerate(edge_pairs)
+    )
+    reference = NetworkXBackend(nodes, edges)
+    scalable = IgraphBackend(nodes, edges)
+    for source_index in range(6):
+        source = f"node:{source_index}"
+        assert scalable.reachable((source,), maximum_depth=6) == reference.reachable(
+            (source,), maximum_depth=6
+        )
+    reference_paths = reference.bounded_simple_paths(
+        "node:0", "node:5", maximum_depth=5, path_cap=50
+    )
+    scalable_paths = scalable.bounded_simple_paths("node:0", "node:5", maximum_depth=5, path_cap=50)
+    assert [path.edge_ids for path in scalable_paths] == [path.edge_ids for path in reference_paths]
+    assert scalable.edge_count == reference.edge_count
+    assert scalable.node_count == reference.node_count
