@@ -1,6 +1,8 @@
 """Command-line entry point for GraphTrust."""
 
 import json
+import os
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Annotated
 
@@ -9,6 +11,9 @@ import typer
 from graphtrust import __version__
 from graphtrust.analysis.pipeline import analyze_bundle
 from graphtrust.data import read_dataset, validate_bundle
+from graphtrust.experiments.registry import ExperimentUnit, expand_registry, load_registry
+from graphtrust.experiments.reporting import generate_report
+from graphtrust.experiments.runner import ExperimentOutcome, run_experiment_unit
 from graphtrust.generator.models import SCALE_SPECS
 from graphtrust.generator.runner import SUPPORTED_VARIANTS, generate_dataset_suite
 from graphtrust.schemas.findings import AnalysisMethod
@@ -207,6 +212,121 @@ def analyze(
                     }
                     for method, result in analysis.results.items()
                 },
+            },
+            sort_keys=True,
+        )
+    )
+
+
+@app.command("experiment")
+def experiment(
+    registry: Annotated[
+        Path,
+        typer.Option("--registry", exists=True, dir_okay=False),
+    ] = Path("configs/experiments.yaml"),
+    workers: Annotated[str, typer.Option("--workers")] = "auto",
+    resume: Annotated[bool, typer.Option("--resume")] = False,
+    config: Annotated[
+        Path,
+        typer.Option("--config", exists=True, dir_okay=False),
+    ] = Path("configs/default.yaml"),
+    data_root: Annotated[
+        Path,
+        typer.Option("--data-root", file_okay=False),
+    ] = Path("data/generated"),
+    output_root: Annotated[
+        Path,
+        typer.Option("--output-root", file_okay=False),
+    ] = Path("artifacts/manifests"),
+    include_development: Annotated[
+        bool,
+        typer.Option("--include-development"),
+    ] = False,
+    dry_run: Annotated[bool, typer.Option("--dry-run")] = False,
+) -> None:
+    """Run the registered matrix with immutable, resumable artifacts."""
+    try:
+        declared = load_registry(registry)
+        expansion = expand_registry(
+            declared,
+            data_root=data_root,
+            include_development=include_development,
+        )
+        project_config = load_project_config(config)
+        worker_count = min(4, os.cpu_count() or 1) if workers == "auto" else int(workers)
+        if worker_count < 1:
+            raise ValueError("workers must be 'auto' or a positive integer")
+        if dry_run:
+            typer.echo(
+                json.dumps(
+                    {
+                        "dry_run": True,
+                        "scheduled_runs": len(expansion.units),
+                        "missing_datasets": expansion.missing_datasets,
+                        "workers": worker_count,
+                    },
+                    sort_keys=True,
+                )
+            )
+            return
+
+        def execute(unit: ExperimentUnit) -> ExperimentOutcome:
+            return run_experiment_unit(
+                unit,
+                project_config,
+                output_root=output_root,
+                resume=resume,
+            )
+
+        with ThreadPoolExecutor(max_workers=worker_count) as pool:
+            outcomes = tuple(pool.map(execute, expansion.units))
+    except (FileNotFoundError, OSError, TypeError, ValueError) as experiment_error:
+        typer.echo(f"Experiment failed: {experiment_error}", err=True)
+        raise typer.Exit(code=1) from experiment_error
+    typer.echo(
+        json.dumps(
+            {
+                "runs": [
+                    {
+                        "run_id": outcome.run_id,
+                        "status": outcome.status,
+                        "directory": str(outcome.run_directory),
+                    }
+                    for outcome in outcomes
+                ],
+                "missing_datasets": expansion.missing_datasets,
+            },
+            sort_keys=True,
+        )
+    )
+
+
+@app.command("report")
+def report(
+    runs: Annotated[
+        Path,
+        typer.Option("--runs", exists=True, file_okay=False),
+    ] = Path("artifacts/manifests"),
+    output: Annotated[
+        Path,
+        typer.Option("--output", file_okay=False),
+    ] = Path("artifacts/paper"),
+    dry_run: Annotated[bool, typer.Option("--dry-run")] = False,
+) -> None:
+    """Build traceable tables from verified experiment artifacts only."""
+    if dry_run:
+        typer.echo(json.dumps({"dry_run": True, "runs": str(runs), "output": str(output)}))
+        return
+    try:
+        payload = generate_report(runs, output)
+    except (FileNotFoundError, OSError, ValueError) as report_error:
+        typer.echo(f"Report generation failed: {report_error}", err=True)
+        raise typer.Exit(code=1) from report_error
+    typer.echo(
+        json.dumps(
+            {
+                "verified_runs": len(payload["verified_run_ids"]),
+                "output": str(output),
             },
             sort_keys=True,
         )
