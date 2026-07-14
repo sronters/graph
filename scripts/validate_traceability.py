@@ -37,6 +37,8 @@ TABLES = (
 def validate(artifacts: Path, *, allow_empty: bool = False) -> dict[str, object]:
     errors: list[str] = []
     runs_root = artifacts / "manifests"
+    if not runs_root.is_dir() and (artifacts / "final_matrix").is_dir():
+        runs_root = artifacts / "final_matrix"
     run_ids: set[str] = set()
     if runs_root.is_dir():
         for directory in sorted(path for path in runs_root.glob("run-*") if path.is_dir()):
@@ -53,7 +55,14 @@ def validate(artifacts: Path, *, allow_empty: bool = False) -> dict[str, object]
         if not valid:
             errors.append(f"{directory.name}: {', '.join(failures)}")
 
-    report_path = artifacts / "paper" / "report.json"
+    paper_root = artifacts / "paper"
+    if not paper_root.is_dir() and (artifacts / "final_paper").is_dir():
+        paper_root = artifacts / "final_paper"
+    report_path = paper_root / "generated" / "final_results.json"
+    if not report_path.is_file():
+        report_path = paper_root / "report.json"
+    if not report_path.is_file() and (paper_root / "report" / "report.json").is_file():
+        report_path = paper_root / "report" / "report.json"
     if report_path.is_file():
         report = json.loads(report_path.read_text(encoding="utf-8"))
         referenced = set(report.get("verified_run_ids", []))
@@ -63,12 +72,12 @@ def validate(artifacts: Path, *, allow_empty: bool = False) -> dict[str, object]
     elif not allow_empty:
         errors.append("paper report.json is missing")
 
-    figures = artifacts / "paper" / "figures"
+    figures = paper_root / "figures"
     for name in FIGURES:
         for suffix in ("svg", "png"):
             if not (figures / f"{name}.{suffix}").is_file() and not allow_empty:
                 errors.append(f"missing figure: {name}.{suffix}")
-    tables = artifacts / "paper" / "tables"
+    tables = paper_root / "tables"
     for name in TABLES:
         if not (tables / name).is_file() and not allow_empty:
             errors.append(f"missing table: {name}")

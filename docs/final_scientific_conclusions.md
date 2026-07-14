@@ -7,8 +7,9 @@ matrix: 225 checksum-verified runs spanning three enterprise profiles, five
 held-out seeds, three paired variants, and five methods. Recall and ranking
 estimates use the 30 injected graphs; the 15 clean graphs are negative
 controls. The enterprise graph, not an individual path, is the statistical
-unit. Medium and large runs are scalability evidence and must not be used to
-rewrite the small-scale confirmatory result.
+unit. Medium and large runs, when executed, are scalability evidence and must
+not be used to rewrite the small-scale confirmatory result. They were not
+completed in an authenticated high-memory environment for this submission.
 
 ## Detection and ranking
 

@@ -4,7 +4,7 @@
 
 ## Abstract
 
-Identity risk can emerge from combinations of individually ordinary permissions across groups, roles, workloads, pipelines, service accounts, and cloud resources. GraphTrust is a platform-neutral research framework and synthetic benchmark for testing whether typed, provider-aware multi-hop graph analysis improves detection and ranking of these modeled exposures relative to four explicit audit baselines. It compiles raw authorization records into an effective-capability graph with three-valued conditions and provenance, ranks bounded paths using auditable ordinal parameters, decomposes an identity-level Zero Trust Risk Index, and produces recommendation-only remediations subject to protected workflows and change budgets. SEIB-2026 generates paired clean, injected, and truth-remediated enterprise graphs across three profiles and three scales. Predictions are saved before truth is joined; immutable run manifests retain configuration, environment, checksum, runtime, and negative-result evidence. The implementation includes reference and scalable graph backends, exact and heuristic remediation, a versioned API, investigation interface, Colab workflow, and automated correctness checks. The full preregistered evaluation matrix and three large Colab runs are not yet represented by verified artifacts in this branch; therefore this brief makes no comparative performance conclusion. Its present contribution is an executable, falsifiable protocol for measuring detection, ranking, remediation cost, and scaling with paired uncertainty.
+Identity risk can emerge from combinations of individually ordinary permissions across groups, roles, workloads, pipelines, service accounts, and cloud resources. GraphTrust is a platform-neutral research framework and synthetic benchmark for testing whether typed, provider-aware multi-hop graph analysis improves detection and ranking of these modeled exposures relative to four explicit audit baselines. It compiles raw authorization records into an effective-capability graph with three-valued conditions and provenance, ranks bounded paths using auditable ordinal parameters, decomposes an identity-level Zero Trust Risk Index, and produces recommendation-only remediations subject to protected workflows and change budgets. SEIB-2026 generates paired clean, injected, and truth-remediated enterprise graphs across three profiles and three scales. Predictions are saved before truth is joined; immutable run manifests retain configuration, environment, checksum, runtime, and negative-result evidence. The completed confirmatory evidence comprises all 225 preregistered small-scale runs. The medium extension and three large Colab launches remain unexecuted and are not used for performance claims.
 
 ## Research question and hypotheses
 
@@ -28,9 +28,22 @@ B0 examines direct entitlements, B1 privileged identities, B2 untyped shortest p
 
 ## Results with uncertainty
 
-No final result is asserted. The full `(3 profiles × 2 scales × 5 final seeds × 3 variants × 5 methods)` preregistered matrix has not yet been verified as a complete immutable artifact set, and large Colab runs are unexecuted in this branch. The reporting code computes paired bootstrap 95% intervals, exact McNemar tests, Friedman/Wilcoxon-Holm comparisons, and effect sizes only from saved run IDs. Figures with unavailable evidence say so explicitly rather than substituting synthetic headline numbers.
+The complete small-scale matrix contains 225 checksum-verified runs: three
+profiles, five held-out seeds, three variants, and five methods. On 30 injected
+graph units, GraphTrust risky-identity and scenario recall were both 0.758
+(approximately 95% bootstrap interval [0.731, 0.781]); direct and
+privileged-only baselines were 0.000, native scope was 0.392, and untyped
+whole-graph traversal tied GraphTrust at 0.758. Exact-path recall was 0.729 for
+GraphTrust and 0.765 for untyped traversal. GraphTrust nevertheless improved
+NDCG@10 from 0.002 (untyped) to 0.125; the paired difference was +0.123 [0.083,
+0.164]. The result supports transitive detection over narrow audits and typed
+prioritization over untyped traversal, but rejects universal recall
+superiority.
 
-One five-method development smoke unit completed and is retained as a pipeline diagnostic. GraphTrust had risky-source recall 0.75, scenario F1 0.00651, and NDCG@10 0.14273; native-scope had recall 0.4167, scenario F1 0.02681, and NDCG@10 0.15022. Thus this unit does not show a general GraphTrust advantage. With `n=1`, no inferential comparison is valid; exact run IDs and checksums are listed in `docs/verification_status.md`.
+On the clean controls, GraphTrust produced 13,786.9 unmatched paths per 1,000
+identities, close to untyped traversal at 13,890.0. Because truth labels only
+the planted conditions, an unmatched path is not necessarily a real-world
+false alarm; the volume still demonstrates the need for ranking and review.
 
 ## Explainability example
 
@@ -46,7 +59,14 @@ Synthetic structural realism does not guarantee real-world representativeness. R
 
 ## Conclusion
 
-GraphTrust currently provides a reproducible implementation and falsifiable evaluation path. Whether it wins, ties, or exhibits trade-offs must be decided by the complete traceable experiment artifacts, not by the design intent.
+Whole-identity traversal closes transitive blind spots left by the two narrow
+audit abstractions in SEIB-2026. Typed GraphTrust semantics do not increase
+risky-starting-identity recall over untyped traversal, but they substantially
+improve top-ranked relevance and retain hop-level provenance. On the registered
+remediation instance, counterfactual recompilation verified that weighted
+min-cut reduced modeled exposure by 97.1% while preserving protected workflows.
+These are synthetic, bounded-search results rather than claims of breach
+probability or autonomous enforcement.
 
 ## References
 
@@ -63,4 +83,4 @@ GraphTrust currently provides a reproducible implementation and falsifiable eval
 
 ## AI Use Transparency Statement
 
-OpenAI Codex assisted with specification interpretation, code and documentation generation/review, debugging, and local verification. Synthetic data are generated deterministically. Metrics may be reported only from saved manifests and checksums. Automated verification completed to date is distinguished from pending full-matrix, Colab, citation, and human review; see `docs/ai_use_statement.md`.
+OpenAI Codex assisted with specification interpretation, code and documentation generation/review, debugging, local experiments, figure generation, and manuscript editing. Synthetic data are generated deterministically. Metrics are reported only from saved manifests and checksums. Completed small-scale and remediation evidence is distinguished from pending medium, Colab, Docker-engine, citation, and human review; see `docs/ai_use_statement.md`.

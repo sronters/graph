@@ -14,15 +14,18 @@ corresponding run directory passes checksum and manifest verification.
 | Dataset variant | `clean`, `injected_low`, `injected_mixed` |
 | Detection method | direct, privileged-only, untyped graph, native scope, GraphTrust |
 
-The full matrix is `3 × 2 × 5 × 3 × 5 = 450` immutable runs: 225 per
-scale. Injected variants are the primary detection units. Clean variants are
-negative controls and are not pooled into recall estimates.
+The preregistered full design is `3 × 2 × 5 × 3 × 5 = 450` immutable runs:
+225 per scale. The completed confirmatory evidence is the entire small-scale
+half (225/225 runs). The 225 medium runs are a pending scalability extension
+and are not represented as completed evidence. Injected variants are the
+primary detection units. Clean variants are negative controls and are not
+pooled into recall estimates.
 
 Small graphs use the preregistered 250,000 global bounded-path cap. Medium
-graphs use a 100-path cap, 1 path per source and source-target pair, and
+graphs are frozen to a 100-path cap, 1 path per source and source-target pair, and
 maximum depth 6 after retained 250,000-, 30,000-, 5,000-, and 1,000-cap
-diagnostics demonstrated excessive memory or runtime. Those diagnostic runs
-are excluded from the final matrix. Medium results are therefore bounded
+diagnostics demonstrated excessive runtime. Those incomplete diagnostic runs
+are excluded from the final matrix. When executed, medium results are bounded
 scalability evidence, not an estimate of exhaustive enterprise path recall.
 These scale-specific limits are fixed before the final medium matrix, saved in
 every resolved configuration, applied symmetrically to the methods, and
@@ -65,6 +68,10 @@ Python/platform information, Colab release tag, verification result, runtime,
 and peak memory. Local executions are useful diagnostics but are never labeled
 as Colab evidence.
 
+Submission status: all three notebooks are complete and structurally
+validated, but none has an authenticated Colab receipt yet. They must be
+described as prepared launches, not completed large runs.
+
 ## Execution commands
 
 ```bash
@@ -88,16 +95,19 @@ python scripts/build_final_results.py \
   --output artifacts/final_paper/generated
 ```
 
-## Completion gate
+## Completion gate and current status
 
-- Exactly 225 verified small runs and 225 verified medium runs.
-- Exactly 45 clean negative-control units and 90 injected primary units per scale.
-- Five methods present for every paired graph unit.
-- All run manifests identify one committed source revision per batch and include
-  configuration, dependency-lock, environment, artifact, and dataset hashes.
-- Three large receipts may be called “Colab runs” only when their environment
-  flag and immutable artifacts verify.
-- Remediation conclusions require post-application counterfactual verification,
-  not solver feasibility alone.
-- The paper, tables, and figures must be regenerated after the gate passes; no
-  manually typed headline number is accepted.
+| Gate | Status |
+|---|---|
+| Exactly 225 verified small runs | **Pass: 225/225** |
+| 45 clean controls and 90 injected units at small scale | **Pass** |
+| Five methods for every small paired graph unit | **Pass** |
+| Run manifests and checksum verification | **Pass** |
+| Exactly 225 verified medium runs | **Pending; not claimed** |
+| Three authenticated Colab receipts | **Pending; not claimed** |
+| Counterfactual remediation after edge application | **Pass on the registered verification instance** |
+| Paper/tables/figures regenerated only from verified artifacts | **Pass for the small matrix and remediation instance** |
+
+The paper's inferential conclusions therefore use only the complete small
+matrix. Future medium and large receipts may add scalability evidence but may
+not retroactively change the preregistered small-scale result.
