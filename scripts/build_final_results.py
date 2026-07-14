@@ -170,6 +170,7 @@ def _latex_macros(payload: dict[str, Any]) -> str:
         for metric, short in (
             ("risky_starting_identity_recall", "RiskyRecall"),
             ("scenario_recall", "ScenarioRecall"),
+            ("exact_path_recall", "ExactPathRecall"),
             ("ndcg_at_10", "NdcgTen"),
         ):
             row = next(
@@ -178,10 +179,25 @@ def _latex_macros(payload: dict[str, Any]) -> str:
             )
             if row:
                 lines.append(_macro(f"{label}{short}", f"{row['mean']:.3f}"))
+    for method in ("untyped", "native_scope", "graphtrust"):
+        label = "".join(part.title() for part in method.split("_"))
+        row = next(
+            (
+                item
+                for item in payload["negative_controls"]
+                if item.get("scale") == "small" and item.get("method") == method
+            ),
+            None,
+        )
+        if row:
+            lines.append(
+                _macro(f"{label}CleanBurden", f"{float(row['mean_unmatched_per_1000']):,.1f}")
+            )
     plans = payload["remediation"]
     tests = payload["paired_tests"]
     for metric, metric_label in (
         ("risky_starting_identity_recall", "RiskyRecall"),
+        ("exact_path_recall", "ExactPathRecall"),
         ("ndcg_at_10", "NdcgTen"),
     ):
         for baseline, baseline_label in (("untyped", "Untyped"), ("native_scope", "Native")):

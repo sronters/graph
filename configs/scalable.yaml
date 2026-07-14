@@ -4,8 +4,8 @@ condition_mode: conservative
 analysis:
   maximum_depth: 6
   top_k_per_source_target: 1
-  top_k_per_source: 3
-  global_path_cap: 1000
+  top_k_per_source: 1
+  global_path_cap: 100
   criticality_threshold: 0.70
   include_dormant: false
   include_disabled: false
