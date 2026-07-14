@@ -78,7 +78,7 @@ def notebook(profile: str, label: str) -> dict[str, object]:
             markdown("## 3. Immutable large GraphTrust run"),
             code(
                 "subprocess.run(['uv', 'run', 'python', 'scripts/run_large_profiles.py', "
-                "'--profile', PROFILE, '--seed', str(SEED), '--config', 'configs/scalable.yaml', "
+                "'--profile', PROFILE, '--seed', str(SEED), '--config', 'configs/large.yaml', "
                 "'--output', 'artifacts/large_runs'], check=True)\n"
                 "receipt = Path('artifacts/large_runs/large_run_receipt.json')\n"
                 "print(receipt.read_text())\n"

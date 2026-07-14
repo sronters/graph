@@ -4,13 +4,15 @@ import argparse
 import json
 from collections import defaultdict
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import matplotlib.pyplot as plt
+import networkx as nx
 import numpy as np
 import polars as pl
+from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
-from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
+from matplotlib.patches import Circle, FancyArrowPatch, FancyBboxPatch
 
 from graphtrust.experiments.reporting import load_run_rows
 
@@ -47,7 +49,7 @@ plt.rcParams.update(
 )
 
 
-def save_figure(figure: plt.Figure, output: Path, name: str) -> None:
+def save_figure(figure: Figure, output: Path, name: str) -> None:
     output.mkdir(parents=True, exist_ok=True)
     figure.text(0.995, 0.008, "GraphTrust · SEIB-2026", ha="right", fontsize=6.5, color="#94A3B8")
     figure.savefig(output / f"{name}.svg", bbox_inches="tight")
@@ -154,7 +156,7 @@ def schema_figure(output: Path) -> None:
     }
     for label, (x, y, color) in nodes.items():
         axis.add_patch(
-            plt.Circle((x, y), 0.078, facecolor=color, edgecolor="white", linewidth=2.2, alpha=0.94)
+            Circle((x, y), 0.078, facecolor=color, edgecolor="white", linewidth=2.2, alpha=0.94)
         )
         axis.text(x, y, label, ha="center", va="center", fontsize=8.5, color="white", weight="bold")
     edges = (
@@ -206,7 +208,8 @@ def bootstrap_interval(values: np.ndarray) -> tuple[float, float]:
     rng = np.random.default_rng(104729)
     indexes = rng.integers(0, len(values), size=(10_000, len(values)))
     samples = values[indexes].mean(axis=1)
-    return tuple(float(value) for value in np.quantile(samples, (0.025, 0.975)))
+    quantiles = np.quantile(samples, (0.025, 0.975))
+    return float(quantiles[0]), float(quantiles[1])
 
 
 def bar_metric(
@@ -265,7 +268,9 @@ def example_path_figure(runs_root: Path, output: Path) -> None:
         predictions = pl.read_parquet(directory / "predictions.parquet")
         if predictions.is_empty() or predictions[0, "method"] != "graphtrust":
             continue
-        top = predictions.sort("path_risk", descending=True).row(0, named=True)
+        multi_hop = predictions.filter(pl.col("path_length") >= 3)
+        ranked = multi_hop if not multi_hop.is_empty() else predictions
+        top = ranked.sort("path_risk", descending=True).row(0, named=True)
         candidates.append((float(top["path_risk"]), directory, str(top["finding_id"])))
     for risk, directory, finding_id in sorted(candidates, reverse=True):
         paths = pl.read_parquet(directory / "paths.parquet")
@@ -279,7 +284,7 @@ def example_path_figure(runs_root: Path, output: Path) -> None:
         xs = np.linspace(0.08, 0.92, len(node_ids))
         for index, (x, node_id) in enumerate(zip(xs, node_ids, strict=True)):
             color = COLORS[5] if index == len(node_ids) - 1 else COLORS[index % 5]
-            axis.add_patch(plt.Circle((x, 0.5), 0.052, color=color, ec="white", lw=2.5, zorder=3))
+            axis.add_patch(Circle((x, 0.5), 0.052, color=color, ec="white", lw=2.5, zorder=3))
             role = (
                 "CRITICAL ASSET"
                 if index == len(node_ids) - 1
@@ -348,6 +353,188 @@ def example_path_figure(runs_root: Path, output: Path) -> None:
     unavailable_figure(
         output, "03_explainable_path", "Explainable path", "No verified run contains a ranked path."
     )
+
+
+def attack_surface_atlas(runs_root: Path, output: Path) -> None:
+    """Render the union of high-ranked multi-hop paths from one verified run."""
+    candidates: list[tuple[float, Path]] = []
+    for directory in sorted(path for path in runs_root.glob("run-*") if path.is_dir()):
+        predictions = pl.read_parquet(directory / "predictions.parquet")
+        if predictions.is_empty() or predictions[0, "method"] != "graphtrust":
+            continue
+        multi_hop = predictions.filter(pl.col("path_length") >= 3)
+        if not multi_hop.is_empty():
+            maximum_risk = multi_hop["path_risk"].max()
+            candidates.append(
+                (float(cast(float, maximum_risk)) if maximum_risk is not None else 0.0, directory)
+            )
+    if not candidates:
+        unavailable_figure(
+            output,
+            "13_attack_surface_atlas",
+            "Identity attack-surface atlas",
+            "No verified multi-hop GraphTrust paths are available.",
+        )
+        return
+
+    _, directory = max(candidates)
+    predictions = (
+        pl.read_parquet(directory / "predictions.parquet")
+        .filter(pl.col("path_length") >= 3)
+        .sort("path_risk", descending=True)
+        .head(18)
+    )
+    finding_ids = predictions["finding_id"].to_list()
+    paths = pl.read_parquet(directory / "paths.parquet").filter(
+        pl.col("finding_id").is_in(finding_ids)
+    )
+    graph: nx.DiGraph[str] = nx.DiGraph()
+    top_id = str(finding_ids[0])
+    top_edges: set[tuple[str, str]] = set()
+    for row in paths.sort(("finding_id", "position")).iter_rows(named=True):
+        source, target = str(row["actor_before"]), str(row["target_id"])
+        graph.add_edge(source, target)
+        if str(row["finding_id"]) == top_id:
+            top_edges.add((source, target))
+
+    position = nx.spring_layout(graph, seed=104729, k=1.35 / np.sqrt(max(1, len(graph))))
+    figure, axis = plt.subplots(figsize=(13, 8.2))
+    axis.axis("off")
+    ordinary = [edge for edge in graph.edges if edge not in top_edges]
+    nx.draw_networkx_edges(
+        graph,
+        position,
+        edgelist=ordinary,
+        edge_color="#94A3B8",
+        alpha=0.28,
+        width=1,
+        arrowsize=10,
+        connectionstyle="arc3,rad=0.06",
+        ax=axis,
+    )
+    nx.draw_networkx_edges(
+        graph,
+        position,
+        edgelist=list(top_edges),
+        edge_color=COLORS[5],
+        alpha=0.95,
+        width=3,
+        arrowsize=17,
+        connectionstyle="arc3,rad=0.04",
+        ax=axis,
+    )
+    type_colors = {
+        "human": COLORS[0],
+        "service": COLORS[2],
+        "workload": COLORS[4],
+        "role": COLORS[3],
+        "group": COLORS[1],
+        "application": "#0EA5E9",
+        "pipeline": "#F97316",
+        "secret": COLORS[5],
+        "resource": "#475569",
+    }
+    node_colors = [
+        type_colors.get(node.split(":", 1)[0], type_colors["resource"]) for node in graph.nodes
+    ]
+    node_sizes = [160 + 95 * graph.degree(node) for node in graph.nodes]
+    nx.draw_networkx_nodes(
+        graph,
+        position,
+        node_color=node_colors,
+        node_size=node_sizes,
+        edgecolors="white",
+        linewidths=1.2,
+        alpha=0.96,
+        ax=axis,
+    )
+    highlighted = {node for edge in top_edges for node in edge}
+    labels = {
+        node: node.split(":", 1)[0].replace("_", " ").title()
+        for node in graph.nodes
+        if node in highlighted or graph.degree(node) >= 4
+    }
+    nx.draw_networkx_labels(
+        graph,
+        position,
+        labels=labels,
+        font_size=7.2,
+        font_weight="bold",
+        font_color=INK,
+        bbox={"facecolor": "white", "alpha": 0.74, "edgecolor": "none", "pad": 1.4},
+        ax=axis,
+    )
+    axis.set_title("Identity attack-surface atlas", pad=18)
+    axis.text(
+        0.5,
+        1.01,
+        f"Union of {len(finding_ids)} high-ranked paths · {len(graph)} nodes · "
+        "red = highest-ranked route",
+        transform=axis.transAxes,
+        ha="center",
+        color=MUTED,
+    )
+    legend = [
+        Line2D(
+            [0],
+            [0],
+            marker="o",
+            color="none",
+            markerfacecolor=color,
+            label=kind.title(),
+            markersize=8,
+        )
+        for kind, color in type_colors.items()
+        if any(node.startswith(kind + ":") for node in graph.nodes)
+    ]
+    axis.legend(handles=legend, loc="lower center", ncol=min(7, len(legend)), frameon=False)
+    save_figure(figure, output, "13_attack_surface_atlas")
+
+
+def ztri_concentration_figure(runs_root: Path, output: Path) -> None:
+    """Plot cumulative modeled risk mass among top-ranked identities."""
+    by_profile: dict[str, list[np.ndarray]] = defaultdict(list)
+    for directory in sorted(path for path in runs_root.glob("run-*") if path.is_dir()):
+        manifest = json.loads((directory / "run_manifest.json").read_text(encoding="utf-8"))
+        dataset = json.loads((directory / "dataset_manifest.json").read_text(encoding="utf-8"))
+        if manifest["method"] != "graphtrust" or dataset["variant"] == "clean":
+            continue
+        scores = pl.read_parquet(directory / "identity_scores.parquet")["ztri"].to_numpy()
+        scores = np.sort(np.clip(scores, 0, None))[::-1]
+        if scores.size and scores.sum() > 0:
+            by_profile[str(dataset["profile"])].append(scores)
+    if not by_profile:
+        unavailable_figure(
+            output,
+            "14_ztri_concentration",
+            "Concentration of modeled identity risk",
+            "No verified GraphTrust identity-score artifacts are available.",
+        )
+        return
+
+    figure, axis = plt.subplots(figsize=(10, 6))
+    palette = dict(zip(sorted(by_profile), (COLORS[0], COLORS[1], COLORS[3]), strict=False))
+    grid = np.linspace(0, 1, 201)
+    for profile, arrays in sorted(by_profile.items()):
+        curves = []
+        for scores in arrays:
+            x = np.arange(1, len(scores) + 1) / len(scores)
+            y = np.cumsum(scores) / scores.sum()
+            curves.append(np.interp(grid, x, y, left=0, right=1))
+        mean = np.mean(curves, axis=0)
+        low, high = np.quantile(curves, (0.1, 0.9), axis=0)
+        label = profile.replace("_", " ").title()
+        axis.plot(grid * 100, mean * 100, lw=2.8, color=palette[profile], label=label)
+        axis.fill_between(grid * 100, low * 100, high * 100, color=palette[profile], alpha=0.12)
+    axis.plot([0, 100], [0, 100], ls="--", color="#94A3B8", lw=1, label="Uniform risk")
+    axis.set_title("How concentrated is the modeled identity risk?")
+    axis.set_xlabel("Top-ranked identities included (%)")
+    axis.set_ylabel("Cumulative share of ZTRI mass (%)")
+    axis.set(xlim=(0, 100), ylim=(0, 100))
+    axis.grid(alpha=0.2)
+    axis.spines[["top", "right"]].set_visible(False)
+    axis.legend(frameon=False, loc="lower right")
+    save_figure(figure, output, "14_ztri_concentration")
 
 
 def remediation_figure(artifact_root: Path, output: Path, tables: Path) -> None:
@@ -516,7 +703,7 @@ def runtime_and_ztri(runs_root: Path, output: Path, tables: Path) -> None:
         )
     if ztri_by_profile:
         figure, axis = plt.subplots(figsize=(9.6, 5.8))
-        bins = np.linspace(0, 100, 41)
+        bins = np.linspace(0, 100, 41).tolist()
         for index, (profile, values) in enumerate(sorted(ztri_by_profile.items())):
             axis.hist(
                 values,
@@ -713,14 +900,14 @@ def extended_figures(artifact_root: Path, output: Path, tables: Path) -> None:
         axis.grid(axis="y", alpha=0.2)
         distribution = axes[1]
         if dirichlet:
-            values = [float(row["spearman"]) for row in dirichlet]
-            distribution.hist(values, bins=28, color=COLORS[3], alpha=0.78, edgecolor="white")
+            correlations = [float(row["spearman"]) for row in dirichlet]
+            distribution.hist(correlations, bins=28, color=COLORS[3], alpha=0.78, edgecolor="white")
             distribution.axvline(
-                float(np.median(values)),
+                float(np.median(correlations)),
                 color=INK,
                 lw=2,
                 ls="--",
-                label=f"median {np.median(values):.2f}",
+                label=f"median {np.median(correlations):.2f}",
             )
             distribution.set_xlabel("Spearman rank correlation")
             distribution.set_ylabel("Dirichlet samples")
@@ -857,6 +1044,8 @@ def main() -> None:
     extended_figures(artifact_root, arguments.output, tables)
     profile_method_heatmap(rows, arguments.output)
     paired_difference_figure(rows, arguments.output)
+    attack_surface_atlas(arguments.runs, arguments.output)
+    ztri_concentration_figure(arguments.runs, arguments.output)
     print(arguments.output)
 
 

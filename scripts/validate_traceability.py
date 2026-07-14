@@ -20,6 +20,8 @@ FIGURES = (
     "10_sensitivity_rank_stability",
     "11_profile_method_heatmap",
     "12_paired_differences",
+    "13_attack_surface_atlas",
+    "14_ztri_concentration",
 )
 TABLES = (
     "01_dataset_statistics.csv",

@@ -3,9 +3,9 @@ backend: igraph
 condition_mode: conservative
 analysis:
   maximum_depth: 8
-  top_k_per_source_target: 10
-  top_k_per_source: 30
-  global_path_cap: 30000
+  top_k_per_source_target: 5
+  top_k_per_source: 10
+  global_path_cap: 10000
   criticality_threshold: 0.70
   include_dormant: false
   include_disabled: false
@@ -14,6 +14,6 @@ storage:
   artifact_root: artifacts
   database_path: artifacts/graphtrust.duckdb
 runtime:
-  workers: auto
+  workers: 1
   deterministic: true
   json_logs: false

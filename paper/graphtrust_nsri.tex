@@ -1,5 +1,5 @@
 \documentclass[10pt]{article}
-\usepackage[letterpaper,margin=0.68in]{geometry}
+\usepackage[letterpaper,margin=0.58in]{geometry}
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage{microtype}
@@ -26,16 +26,16 @@
 \hypersetup{colorlinks=true,linkcolor=GTBlue,citecolor=GTBlue,urlcolor=GTBlue,pdfauthor={Baktiyar Ablaikhan},pdftitle={GraphTrust}}
 \color{GTInk}
 \setlength{\parindent}{0pt}
-\setlength{\parskip}{3.2pt}
+\setlength{\parskip}{2.3pt}
 \setlist{nosep,leftmargin=1.25em}
 \captionsetup{font=footnotesize,labelfont=bf,textfont=it,skip=2pt}
-\setlength{\textfloatsep}{6pt plus 2pt minus 2pt}
-\setlength{\floatsep}{5pt plus 2pt minus 2pt}
-\setlength{\intextsep}{5pt plus 2pt minus 2pt}
+\setlength{\textfloatsep}{4pt plus 2pt minus 1pt}
+\setlength{\floatsep}{4pt plus 2pt minus 1pt}
+\setlength{\intextsep}{4pt plus 2pt minus 1pt}
 \titleformat{\section}{\large\bfseries\color{GTBlue}}{\thesection}{0.55em}{}
 \titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.5em}{}
-\titlespacing*{\section}{0pt}{8pt}{3pt}
-\titlespacing*{\subsection}{0pt}{6pt}{2pt}
+\titlespacing*{\section}{0pt}{6pt}{2pt}
+\titlespacing*{\subsection}{0pt}{4pt}{1.5pt}
 \pagestyle{fancy}
 \fancyhf{}
 \lhead{\small GraphTrust · NSRI Summer Research Hackathon 2026}
@@ -77,6 +77,8 @@ We preregistered three hypotheses: (H1) whole-identity analysis increases recall
 SEIB-2026 generates three enterprise profiles---SaaS scale-up, regulated finance, and global hybrid---rather than uniformly random graphs. Each graph contains departments, correlated group and role assignment, human and non-human identities, policies, repositories, pipelines, secrets, and multi-cloud resources. Twelve scenario families inject documented dangerous paths and hard negatives. Paired variants share the same clean base graph, so changes in detection are attributable to the injected condition rather than unrelated topology.
 
 The final matrix crosses 3 profiles, 5 held-out seeds, 3 variants (clean, injected-low, injected-mixed), and 5 methods: 225 immutable runs per scale. Every run stores dataset/configuration hashes, git revision, environment, predictions, paths, scores, warnings, timings, and checksums. Truth is first joined after inference. Clean graphs measure unmatched-finding burden; detection endpoints are estimated on injected graphs. Reported uncertainty uses paired graph-level bootstrap intervals (10,000 resamples), Friedman omnibus tests, and Holm-corrected paired Wilcoxon follow-ups. Reachability is potential authorization exposure, not proof of successful exploitation.
+
+Small graphs use a 250,000 global path cap. A retained medium-scale probe at that cap exceeded the practical memory/runtime envelope, so the final medium matrix fixes the cap at 30,000, with 30 paths per source and 10 per source--target pair. Large scalability launches use 10,000. Truncation is persisted per run, and cross-scale recall is interpreted with search completeness rather than as a cap-free comparison.
 
 \subsection{Graph semantics, scoring, and baselines}
 
@@ -147,7 +149,7 @@ Synthetic structural realism does not establish real-world prevalence. Injected 
 
 \section{Conclusion and impact}
 
-GraphTrust supports a precise conclusion rather than a universal superiority claim. Whole-identity reachability reveals transitive paths that direct and privileged-only audits systematically miss in SEIB-2026. Typed semantics do not increase recall over untyped whole-graph traversal, but they materially improve top-ranked relevance, provenance, and explanation. Counterfactual remediation can translate effective-graph choke points into raw IAM changes and verify both exposure reduction and workflow preservation. These results make graph analysis useful as an explainable complement to provider-native IAM tools, while the false-positive burden, bounded search, and synthetic benchmark argue against treating any score as autonomous enforcement evidence.
+GraphTrust supports a precise conclusion rather than a universal superiority claim. Whole-identity reachability reveals transitive paths that direct and privileged-only audits systematically miss in SEIB-2026. Typed semantics do not increase recall over untyped whole-graph traversal, but they materially improve top-ranked relevance, provenance, and explanation. Counterfactual remediation translates choke points into raw IAM changes and verifies exposure reduction plus workflow preservation. Thus GraphTrust complements provider-native IAM tools; it is not autonomous enforcement evidence.
 
 \clearpage
 \begin{thebibliography}{99}

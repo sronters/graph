@@ -3,11 +3,13 @@
 import json
 import os
 import platform
+import resource
 import shutil
 import subprocess
 import sys
 import threading
 import time
+from contextlib import suppress
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -190,13 +192,28 @@ def _run_with_memory_sampling(
     method: Any,
 ) -> tuple[Any, float, float]:
     """Run inference while sampling process resident memory."""
-    process = psutil.Process()
-    peak_rss = [process.memory_info().rss]
+    try:
+        candidate_process = psutil.Process()
+        initial_rss = candidate_process.memory_info().rss
+        process: psutil.Process | None = candidate_process
+    except psutil.Error:
+        # Some constrained containers hide the current PID from /proc.  The
+        # process-wide high-water mark remains available through getrusage.
+        process = None
+        initial_rss = int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
+        if platform.system() != "Darwin":
+            initial_rss *= 1024
+    peak_rss = [initial_rss]
     stop = threading.Event()
 
     def sample() -> None:
         while not stop.wait(0.05):
-            peak_rss[0] = max(peak_rss[0], process.memory_info().rss)
+            if process is None:
+                continue
+            try:
+                peak_rss[0] = max(peak_rss[0], process.memory_info().rss)
+            except psutil.Error:
+                return
 
     sampler = threading.Thread(target=sample, name="graphtrust-rss-sampler", daemon=True)
     sampler.start()
@@ -206,7 +223,9 @@ def _run_with_memory_sampling(
     finally:
         stop.set()
         sampler.join(timeout=1)
-        peak_rss[0] = max(peak_rss[0], process.memory_info().rss)
+        if process is not None:
+            with suppress(psutil.Error):
+                peak_rss[0] = max(peak_rss[0], process.memory_info().rss)
     return analysis, time.perf_counter() - started, peak_rss[0] / (1024 * 1024)
 
 
