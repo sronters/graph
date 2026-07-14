@@ -49,7 +49,7 @@ and does not establish global minimality for a real organization.
   Spearman rank correlation 0.9969 and minimum 0.928.
 - Final report inputs: checksum-validated result JSON/CSV and generated LaTeX
   macros.
-- Figures: 14 publication figures in SVG and 300-dpi PNG; the paper includes a
+- Figures: 16 publication figures in SVG and 300-dpi PNG; the paper includes a
   graph attack-surface atlas, explainable path, paired effect plot, ranking and
   recall charts, remediation frontier, sensitivity, ablation, heatmap, ZTRI
   distribution/concentration, architecture, schema, and resource plot.
@@ -72,10 +72,10 @@ and does not establish global minimality for a real organization.
 ## Docker boundary
 
 Dockerfile, Compose definitions, health checks, and a public CI workflow that
-builds, starts, and probes the stack are present. The current execution
-environment has no Docker-compatible CLI/daemon, so an actual image build and
-container startup were **not executed**. Static configuration checks do not
-count as Docker startup verification.
+builds, starts, and probes the stack are present. GitHub Actions run
+`29354250207` successfully built the production images, started GraphTrust,
+passed API/frontend health checks, captured logs/state, and stopped the stack.
+This is the authoritative Docker startup verification.
 
 ## Final code-quality gate
 
@@ -87,12 +87,13 @@ The final gate completed with these results:
 - Frontend: TypeScript lint/typecheck pass; Vitest 3/3 pass; Vite production
   build pass.
 - Four Colab notebooks: JSON structure valid.
-- Traceability: 225 verified run IDs, 14 figures, and 7 tables; no missing or
+- Traceability: 225 verified run IDs in the confirmatory evidence ledger, 16
+  figures, and review-budget/depth tables; no missing or
   corrupt referenced artifact.
 - LaTeX: main paper and figure appendix compile without fatal errors.
 - PDF render inspection: every page of the four-page paper and seven-page
   figure appendix inspected after the final build.
-- Docker/Compose/workflow YAML: static parse pass; engine startup not executed.
+- Docker/Compose/workflow YAML: static parse pass and remote engine startup pass.
 
 ## Defensible submission status
 

@@ -14,14 +14,15 @@ corresponding run directory passes checksum and manifest verification.
 | Dataset variant | `clean`, `injected_low`, `injected_mixed` |
 | Detection method | direct, privileged-only, untyped graph, native scope, GraphTrust |
 
-The preregistered full design is `3 × 2 × 5 × 3 × 5 = 450` immutable runs:
+The pre-specified full design (commit `b226203`, before final evaluation) is
+`3 × 2 × 5 × 3 × 5 = 450` immutable runs:
 225 per scale. The completed confirmatory evidence is the entire small-scale
 half (225/225 runs). The 225 medium runs are a pending scalability extension
 and are not represented as completed evidence. Injected variants are the
 primary detection units. Clean variants are negative controls and are not
 pooled into recall estimates.
 
-Small graphs use the preregistered 250,000 global bounded-path cap. Medium
+Small graphs use the pre-specified 250,000 global bounded-path cap. Medium
 graphs are frozen to a 100-path cap, 1 path per source and source-target pair, and
 maximum depth 6 after retained 250,000-, 30,000-, 5,000-, and 1,000-cap
 diagnostics demonstrated excessive runtime. Those incomplete diagnostic runs
@@ -33,22 +34,27 @@ reported through per-run truncation warnings. Cross-scale recall is therefore
 interpreted together with search completeness rather than as a pure
 algorithmic scaling curve.
 
-Primary endpoints are risky-starting-identity recall, scenario recall,
-exact-path recall, and NDCG@10. Secondary endpoints are precision/F1,
-unmatched findings per 1,000 identities, explanation completeness, runtime,
-expanded states, candidate paths, and peak resident memory. Paired inference
-uses the enterprise graph `(profile, seed, variant)` as the independent unit,
-not each enumerated path.
+Primary endpoints are exact-path precision/recall at analyst review budgets
+K∈{5,10,20,50}, NDCG@10, and MRR. Exhaustive risky-starting-identity recall,
+scenario recall, and exact-path recall remain secondary endpoints. Secondary
+outputs include precision/F1, unmatched findings per 1,000 identities,
+explanation completeness, runtime, expanded states, candidate paths, and peak
+resident memory. Paired inference uses `(profile, seed)` cluster means as the
+independent unit, not each variant or enumerated path. The depth-stress runner
+reports recall separately for direct, 2-hop, 3-hop, and 4–6-hop planted paths.
 
 ## Remediation matrix
 
-The same injected-mixed verification graph and target exposure reduction are
-given to degree greedy, risk greedy, weighted minimum cut, and iterative CP-SAT
-constraint generation. Every plan reports raw IAM changes, modeled cost,
+The replication runner is configured for 3 profiles × 5 seeds and targets
+50%, 70%, 80%, 90%, and 95% exposure reduction. It compares degree greedy,
+risk greedy, weighted minimum cut, and iterative CP-SAT constraint generation.
+Every plan reports raw IAM changes, modeled cost, departments affected,
 enumerated paths blocked, residual weighted exposure, solver status, and search
 truncation. A plan is publication-verified only after the proposed raw edges are
 removed, effective capabilities are recompiled, analysis is rerun, and all
-capability-specific protected workflows remain reachable.
+capability-specific protected workflows remain reachable. The current checked
+in evidence remains the registered single-instance verification; the 15-graph
+replication is a required run, not a silently inferred result.
 
 ## Large-profile launches
 
@@ -110,4 +116,4 @@ python scripts/build_final_results.py \
 
 The paper's inferential conclusions therefore use only the complete small
 matrix. Future medium and large receipts may add scalability evidence but may
-not retroactively change the preregistered small-scale result.
+not retroactively change the pre-specified small-scale result.

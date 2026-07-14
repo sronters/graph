@@ -25,6 +25,11 @@ class DetectionMetrics(StrictModel):
     recall_at_5: float = Field(ge=0, le=1)
     recall_at_10: float = Field(ge=0, le=1)
     recall_at_20: float = Field(ge=0, le=1)
+    recall_at_50: float = Field(ge=0, le=1)
+    precision_at_5: float = Field(ge=0, le=1)
+    precision_at_10: float = Field(ge=0, le=1)
+    precision_at_20: float = Field(ge=0, le=1)
+    precision_at_50: float = Field(ge=0, le=1)
     ndcg_at_10: float = Field(ge=0, le=1)
     ndcg_at_20: float = Field(ge=0, le=1)
     mean_reciprocal_rank: float = Field(ge=0, le=1)
@@ -141,6 +146,16 @@ def evaluate_detection(
         }
         return len(retained) / truth_count if truth_count else 0.0
 
+    def precision_at(k: int) -> float:
+        if not findings:
+            return 0.0
+        retained = {
+            _raw_signature(finding)
+            for finding in findings[:k]
+            if _raw_signature(finding) in truth_by_signature
+        }
+        return len(retained) / min(k, len(findings))
+
     ideal_relevances = sorted(
         (cast(float, row["severity"]) for row in truth_by_signature.values()), reverse=True
     )
@@ -172,6 +187,11 @@ def evaluate_detection(
         recall_at_5=recall_at(5),
         recall_at_10=recall_at(10),
         recall_at_20=recall_at(20),
+        recall_at_50=recall_at(50),
+        precision_at_5=precision_at(5),
+        precision_at_10=precision_at(10),
+        precision_at_20=precision_at(20),
+        precision_at_50=precision_at(50),
         ndcg_at_10=ndcg_at(10),
         ndcg_at_20=ndcg_at(20),
         mean_reciprocal_rank=(

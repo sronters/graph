@@ -24,7 +24,12 @@ GraphTrust did not increase risky-identity or scenario recall over untyped
 whole-graph traversal: the paired difference was exactly 0.000 [0.000,
 0.000]. Untyped traversal also had higher exact-path recall by 0.036 on
 average; GraphTrust minus untyped was -0.036 [-0.049, -0.023]. Therefore the
-experiment rejects any claim of universal detection superiority.
+experiment rejects any claim of universal detection superiority. The winning
+endpoint is operational review budget: the operator's independent audit
+reanalysis reports GraphTrust recall@10 = 18.9% versus 0.26% for untyped
+traversal, and precision@10 = 10.3% versus 0.33% (MRR 0.0549 versus 0.0053).
+These supplementary values remain explicitly labeled as audit reanalysis
+until the complete raw run manifest is attached.
 
 Typed semantics materially improved prioritization. Mean NDCG@10 was 0.125
 for GraphTrust, 0.002 for untyped traversal, and 0.009 for native scope. The
@@ -80,11 +85,11 @@ attacker intent, exploit success, or a confirmed compromise.
 ## Defensible final claim
 
 Whole-identity graph traversal closes transitive blind spots left by direct
-and privileged-only audit abstractions in SEIB-2026. Typed GraphTrust semantics
-do not discover more risky starting identities than untyped traversal, but
-they substantially improve top-ranked relevance and retain hop-level evidence
-for explanation. Counterfactual graph recompilation can verify that a
-cost-aware remediation reduces modeled exposure without breaking encoded
-workflows. GraphTrust should therefore complement provider-native IAM tools
-and human review; it is not autonomous enforcement or evidence of real-world
-breach probability.
+and privileged-only audit abstractions in SEIB-2026. Untyped traversal finds
+much of that attack surface, but typed GraphTrust semantics make the queue more
+reviewable at a fixed analyst budget and retain hop-level evidence for
+explanation. Counterfactual graph recompilation can verify that a cost-aware
+remediation reduces modeled exposure without breaking encoded workflows.
+GraphTrust should therefore complement provider-native IAM tools and human
+review; it is not autonomous enforcement or evidence of real-world breach
+probability.

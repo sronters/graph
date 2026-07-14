@@ -262,6 +262,188 @@ def bar_metric(
     save_figure(figure, output, name)
 
 
+def review_budget_figure(rows: list[dict[str, Any]], output: Path, tables: Path) -> None:
+    """Show the operational review queue rather than only exhaustive recall."""
+    selected = [row for row in rows if row.get("variant") != "clean"]
+    audit_path = Path("results/review_budget_summary.csv")
+    audit_frame = pl.read_csv(audit_path) if audit_path.is_file() else pl.DataFrame()
+    audit_mode = not selected or "precision_at_50" not in selected[0]
+    if audit_mode and audit_frame.is_empty():
+        unavailable_figure(
+            output,
+            "15_review_budget_curve",
+            "Analyst review budget",
+            "No verified review-budget metrics are available.",
+        )
+        return
+    budgets = (5, 10, 20, 50)
+    records: list[dict[str, Any]] = []
+    figure, axes = plt.subplots(1, 2, figsize=(12, 5.2), sharex=True)
+    for method in METHOD_ORDER:
+        if audit_mode:
+            method_rows = audit_frame.filter(pl.col("method") == method).sort("review_budget")
+            if method_rows.is_empty():
+                continue
+            budgets_for_method = [int(value) for value in method_rows["review_budget"].to_list()]
+            recalls = [float(value) for value in method_rows["recall"].to_list()]
+            precisions = [
+                float(value) if value is not None else np.nan
+                for value in method_rows["precision"].to_list()
+            ]
+            n_runs = 0
+        else:
+            method_rows = [row for row in selected if row["method"] == method]
+            if not method_rows:
+                continue
+            budgets_for_method = list(budgets)
+            recalls = [
+                float(np.mean([row[f"recall_at_{budget}"] for row in method_rows]))
+                for budget in budgets
+            ]
+            precisions = [
+                float(np.mean([row[f"precision_at_{budget}"] for row in method_rows]))
+                for budget in budgets
+            ]
+            n_runs = len(method_rows)
+        for budget, recall, precision in zip(budgets_for_method, recalls, precisions, strict=True):
+            records.append(
+                {
+                    "method": method,
+                    "review_budget": budget,
+                    "recall": recall,
+                    "precision": precision,
+                    "n_runs": n_runs,
+                }
+            )
+        color = METHOD_COLORS[method]
+        axes[0].plot(
+            budgets_for_method,
+            np.asarray(recalls) * 100,
+            marker="o",
+            lw=2.6,
+            color=color,
+            label=METHOD_LABELS[method],
+        )
+        axes[1].plot(
+            budgets_for_method,
+            np.asarray(precisions) * 100,
+            marker="o",
+            lw=2.6,
+            color=color,
+            label=METHOD_LABELS[method],
+        )
+    pl.DataFrame(records).write_csv(tables / "08_review_budget_metrics.csv")
+    axes[0].set_title("Recall surfaced within the queue")
+    axes[0].set_ylabel("Exact-path recall (%)")
+    axes[1].set_title("Evidence density in the queue")
+    axes[1].set_ylabel("Exact-path precision (%)")
+    for axis in axes:
+        axis.set_xlabel("Findings an analyst can review (K)")
+        axis.set_xticks(budgets)
+        axis.grid(alpha=0.2)
+        axis.spines[["top", "right"]].set_visible(False)
+    axes[1].legend(frameon=False, fontsize=8)
+    figure.suptitle(
+        "GraphTrust converts reachability into a reviewable queue", weight="bold", fontsize=15
+    )
+    save_figure(figure, output, "15_review_budget_curve")
+
+
+def depth_stratified_figure(runs_root: Path, output: Path, tables: Path) -> None:
+    """Measure exact-path recall by planted path depth without using truth at inference."""
+    records: list[dict[str, Any]] = []
+    dataset_by_id: dict[str, Path] = {}
+    for manifest_path in Path("data/generated").rglob("dataset_manifest.json"):
+        try:
+            dataset_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        dataset_by_id[str(dataset_manifest.get("dataset_id"))] = manifest_path.parent
+    for directory in sorted(path for path in runs_root.glob("run-*") if path.is_dir()):
+        dataset = json.loads((directory / "dataset_manifest.json").read_text(encoding="utf-8"))
+        if dataset.get("variant") == "clean":
+            continue
+        dataset_path = dataset_by_id.get(str(dataset.get("dataset_id")))
+        if dataset_path is None:
+            continue
+        truth = pl.read_parquet(dataset_path / "truth_paths.parquet")
+        paths = pl.read_parquet(directory / "paths.parquet")
+        truth_by_signature: dict[tuple[str, str, tuple[str, ...]], int] = {}
+        for row in truth.iter_rows(named=True):
+            edges = tuple(str(value) for value in json.loads(str(row["edge_ids_json"])))
+            truth_by_signature[(str(row["source_id"]), str(row["target_id"]), edges)] = len(edges)
+        prediction_signatures: set[tuple[str, str, tuple[str, ...]]] = set()
+        for _finding_id, group in paths.group_by("finding_id", maintain_order=True):
+            rows = group.sort("position").iter_rows(named=True)
+            rows = list(rows)
+            if not rows:
+                continue
+            prediction_signatures.add(
+                (
+                    str(rows[0]["actor_before"]),
+                    str(rows[-1]["target_id"]),
+                    tuple(
+                        raw_id
+                        for item in rows
+                        for raw_id in json.loads(str(item["raw_evidence_edge_ids_json"]))
+                    ),
+                )
+            )
+        by_depth: dict[int, tuple[int, int]] = {}
+        for signature, depth in truth_by_signature.items():
+            total, matched = by_depth.get(depth, (0, 0))
+            by_depth[depth] = (total + 1, matched + int(signature in prediction_signatures))
+        for depth, (total, matched) in by_depth.items():
+            records.append(
+                {
+                    "run_id": directory.name,
+                    "profile": dataset["profile"],
+                    "seed": dataset["generator_seed"],
+                    "method": json.loads(
+                        (directory / "run_manifest.json").read_text(encoding="utf-8")
+                    )["method"],
+                    "path_depth": depth,
+                    "truth_paths": total,
+                    "matched_paths": matched,
+                    "recall": matched / total if total else 0.0,
+                }
+            )
+    if not records:
+        unavailable_figure(
+            output,
+            "16_recall_by_path_depth",
+            "Recall by path depth",
+            "No truth-separated depth artifacts are available.",
+        )
+        return
+    frame = pl.DataFrame(records)
+    frame.write_csv(tables / "09_recall_by_path_depth.csv")
+    aggregate = frame.group_by(["method", "path_depth"]).agg(
+        pl.col("recall").mean().alias("recall")
+    )
+    figure, axis = plt.subplots(figsize=(9.6, 5.6))
+    for method in METHOD_ORDER:
+        selected = aggregate.filter(pl.col("method") == method).sort("path_depth")
+        if selected.is_empty():
+            continue
+        axis.plot(
+            selected["path_depth"],
+            selected["recall"] * 100,
+            marker="o",
+            lw=2.6,
+            color=METHOD_COLORS[method],
+            label=METHOD_LABELS[method],
+        )
+    axis.set_xlabel("Planted path depth (raw IAM transitions)")
+    axis.set_ylabel("Exact-path recall (%)")
+    axis.set_title("Whole-graph methods gain as privilege paths become multi-hop")
+    axis.set_xticks(sorted(frame["path_depth"].unique().to_list()))
+    axis.grid(alpha=0.2)
+    axis.legend(frameon=False, ncols=2)
+    axis.spines[["top", "right"]].set_visible(False)
+    save_figure(figure, output, "16_recall_by_path_depth")
+
+
 def example_path_figure(runs_root: Path, output: Path) -> None:
     candidates: list[tuple[float, Path, str]] = []
     for directory in sorted(path for path in runs_root.glob("run-*") if path.is_dir()):
@@ -659,36 +841,45 @@ def runtime_and_ztri(runs_root: Path, output: Path, tables: Path) -> None:
     if runtime_rows:
         pl.DataFrame(runtime_rows).write_csv(tables / "05_runtime_and_memory.csv")
         figure, axis = plt.subplots(figsize=(9.6, 5.8))
-        for method in METHOD_ORDER:
-            selected = [row for row in runtime_rows if row["method"] == method]
-            if not selected:
-                continue
-            axis.scatter(
-                [row["nodes"] for row in selected],
-                [row["inference_seconds"] for row in selected],
-                s=[max(28, float(row["peak_rss_mib"]) / 4) for row in selected],
-                c=METHOD_COLORS[method],
-                alpha=0.72,
-                edgecolors="white",
-                linewidths=0.7,
-                label=METHOD_LABELS[method],
-            )
-        axis.set_xscale("log")
-        axis.set_yscale("log")
-        axis.set_xlabel("Nodes")
-        axis.set_ylabel("Inference seconds")
-        axis.set_title("Runtime and peak-memory scaling")
+        node_counts = sorted({int(row["nodes"]) for row in runtime_rows})
+        if len(node_counts) == 1:
+            data = []
+            labels = []
+            for method in METHOD_ORDER:
+                values = [
+                    float(row["inference_seconds"])
+                    for row in runtime_rows
+                    if row["method"] == method
+                ]
+                if values:
+                    data.append(values)
+                    labels.append(METHOD_LABELS[method])
+            axis.boxplot(data, tick_labels=labels, patch_artist=True, widths=0.55)
+            axis.set_ylabel("Inference seconds")
+            axis.set_title(f"Runtime distribution on fixed {node_counts[0]:,}-node graphs")
+            axis.tick_params(axis="x", rotation=18)
+        else:
+            for method in METHOD_ORDER:
+                selected = [row for row in runtime_rows if row["method"] == method]
+                if not selected:
+                    continue
+                axis.scatter(
+                    [row["nodes"] for row in selected],
+                    [row["inference_seconds"] for row in selected],
+                    s=42,
+                    c=METHOD_COLORS[method],
+                    alpha=0.72,
+                    edgecolors="white",
+                    linewidths=0.7,
+                    label=METHOD_LABELS[method],
+                )
+            axis.set_xscale("log")
+            axis.set_yscale("log")
+            axis.set_xlabel("Nodes")
+            axis.set_ylabel("Inference seconds")
+            axis.set_title("Runtime scaling across graph sizes")
+            axis.legend(frameon=False, ncols=2)
         axis.grid(alpha=0.2)
-        axis.legend(frameon=False, ncols=2)
-        axis.text(
-            0.99,
-            0.02,
-            "Bubble area ∝ peak RSS",
-            transform=axis.transAxes,
-            ha="right",
-            fontsize=8,
-            color=MUTED,
-        )
         axis.spines[["top", "right"]].set_visible(False)
         save_figure(figure, output, "07_runtime_memory_scaling")
     else:
@@ -1038,12 +1229,14 @@ def main() -> None:
         "Ranking quality comparison",
         ("ndcg_at_10", "ndcg_at_20"),
     )
+    review_budget_figure(rows, arguments.output, tables)
     artifact_root = arguments.runs.parent
     remediation_figure(artifact_root, arguments.output, tables)
     runtime_and_ztri(arguments.runs, arguments.output, tables)
     extended_figures(artifact_root, arguments.output, tables)
     profile_method_heatmap(rows, arguments.output)
     paired_difference_figure(rows, arguments.output)
+    depth_stratified_figure(arguments.runs, arguments.output, tables)
     attack_surface_atlas(arguments.runs, arguments.output)
     ztri_concentration_figure(arguments.runs, arguments.output)
     print(arguments.output)

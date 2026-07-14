@@ -55,6 +55,11 @@ def test_detection_metrics_match_exact_truth_signature() -> None:
     assert metrics.exact_path_f1 == 1
     assert metrics.scenario_recall == 1
     assert metrics.recall_at_5 == 1
+    assert metrics.recall_at_50 == 1
+    assert metrics.precision_at_5 == 1
+    assert metrics.precision_at_10 == 1
+    assert metrics.precision_at_20 == 1
+    assert metrics.precision_at_50 == 1
     assert metrics.ndcg_at_10 == pytest.approx(1)
     assert metrics.mean_reciprocal_rank == 1
 
@@ -76,6 +81,7 @@ def test_empty_predictions_are_reported_without_division_errors() -> None:
     metrics = evaluate_detection((), truth_paths, truth_scenarios, identity_count=0)
     assert metrics.predicted_findings == 0
     assert metrics.exact_path_precision == 0
+    assert metrics.precision_at_50 == 0
     assert metrics.mean_reciprocal_rank == 0
 
 

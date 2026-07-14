@@ -2,7 +2,7 @@
 
 GraphTrust is a reproducible research system for explainable, whole-identity graph analysis of multi-hop IAM exposure. It normalizes synthetic multi-provider authorization records into a typed effective-capability graph, ranks potential paths to critical assets, and evaluates recommendation-only remediations under declared business constraints.
 
-The claim under test is deliberately narrow: on SEIB-2026 synthetic enterprise graphs, typed multi-hop analysis may improve detection and ranking of injected authorization-exposure scenarios relative to the implemented B0–B3 research baselines, while constrained remediation may reduce modeled exposure at an auditable business-removal cost. GraphTrust does **not** prove exploitability or compromise, estimate incident probability, describe every commercial IAM product, inspect live tenants, collect credentials, or make permission changes.
+The claim under test is deliberately narrow: on SEIB-2026 synthetic enterprise graphs, typed multi-hop analysis may make injected authorization-exposure evidence more reviewable at a fixed analyst budget relative to the implemented B0–B3 research baselines, while constrained remediation may reduce modeled exposure at an auditable business-removal cost. GraphTrust does **not** prove exploitability or compromise, estimate incident probability, describe every commercial IAM product, inspect live tenants, collect credentials, or make permission changes.
 
 ## Architecture
 
@@ -31,7 +31,7 @@ The generator creates paired `clean`, `injected_low`, `injected_mixed`, and `rem
 
 ## Experiments and evidence
 
-Run the preregistered small/medium matrix only after generating every configured dataset:
+Run the pre-specified small/medium matrix only after generating every configured dataset:
 
 ```bash
 bash scripts/run_all_experiments.sh
@@ -70,4 +70,6 @@ npm --prefix frontend run test
 npm --prefix frontend run build
 ```
 
-Use [CITATION.cff](CITATION.cff) and cite the exact dataset manifest and experiment run IDs used in a result. The current evidence status is recorded in the [verification ledger](docs/verification_status.md) and [research brief](docs/research_brief.md); absent full artifacts, no comparative empirical conclusion is asserted.
+Use [CITATION.cff](CITATION.cff) and cite the exact dataset manifest and experiment run IDs used in a result. The current evidence status is recorded in the [verification ledger](docs/verification_status.md) and [research brief](docs/research_brief.md).
+
+The short reviewer-facing reproduction path is [README_REPRODUCE_HEADLINE.md](README_REPRODUCE_HEADLINE.md). It defines Precision/Recall@K, cluster bootstrap units, depth stress, and remediation replication without treating prepared Colab notebooks as executed evidence.
