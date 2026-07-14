@@ -1,0 +1,9 @@
+profile: regulated_finance
+display_name: Regulated financial organization
+departments: [Retail, Institutional, Risk, Compliance, Security Operations, Platform Engineering, Data, Internal Audit, Finance, Legal, IT]
+regions: [North America, Europe, Asia-Pacific]
+contractor_share: 0.06
+service_account_ratio: 1.2
+direct_privilege_max_share: 0.025
+conditional_access_share: 0.42
+protected_workflow_share: 0.18

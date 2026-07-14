@@ -1,0 +1,74 @@
+[build-system]
+requires = ["setuptools>=80,<81"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "graphtrust"
+version = "0.1.0"
+description = "Explainable whole-identity graph analysis for multi-hop IAM risk research"
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+license = { text = "Apache-2.0" }
+authors = [{ name = "GraphTrust contributors" }]
+dependencies = [
+  "duckdb>=1.3,<2",
+  "fastapi>=0.116,<1",
+  "networkx>=3.4,<4",
+  "numpy>=2.1,<3",
+  "ortools>=9.14,<10",
+  "polars>=1.31,<2",
+  "psutil>=7,<8",
+  "pyarrow>=20,<22",
+  "pydantic>=2.11,<3",
+  "pydantic-settings>=2.10,<3",
+  "python-igraph>=0.11.8,<1",
+  "pyyaml>=6.0.2,<7",
+  "scikit-learn>=1.7,<2",
+  "scipy>=1.16,<2",
+  "typer>=0.16,<1",
+  "uvicorn[standard]>=0.35,<1",
+]
+
+[project.optional-dependencies]
+research = [
+  "matplotlib>=3.10,<4",
+  "pandas>=2.3,<3",
+  "seaborn>=0.13.2,<1",
+]
+dev = [
+  "hypothesis>=6.135,<7",
+  "httpx>=0.28,<1",
+  "mypy>=1.16,<2",
+  "pytest>=8.4,<9",
+  "pytest-cov>=6.2,<7",
+  "ruff>=0.12,<1",
+  "types-pyyaml>=6.0.12,<7",
+]
+
+[project.scripts]
+graphtrust = "graphtrust.cli:app"
+
+[tool.setuptools.packages.find]
+include = ["graphtrust*"]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-config --strict-markers"
+testpaths = ["tests"]
+markers = ["performance: resource-intensive performance verification"]
+
+[tool.coverage.run]
+branch = true
+source = ["graphtrust"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+plugins = ["pydantic.mypy"]
+exclude = ["notebooks"]

@@ -1,0 +1,19 @@
+schema_version: "1.0"
+backend: networkx
+condition_mode: conservative
+analysis:
+  maximum_depth: 8
+  top_k_per_source_target: 20
+  top_k_per_source: 100
+  global_path_cap: 250000
+  criticality_threshold: 0.70
+  include_dormant: false
+  include_disabled: false
+storage:
+  data_root: data
+  artifact_root: artifacts
+  database_path: artifacts/graphtrust.duckdb
+runtime:
+  workers: auto
+  deterministic: true
+  json_logs: false

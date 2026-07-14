@@ -1,0 +1,28 @@
+schema_version: "1.0"
+disclaimer: "Ordinal relative-risk assumptions; not calibrated breach probabilities."
+path_cost:
+  length_penalty: 0.08
+  unknown_penalty: 0.35
+  control_strength_penalty: 0.40
+unknown_multiplier: 0.70
+edge_exploitability:
+  READS: 0.95
+  WRITES: 0.95
+  ADMINISTERS: 0.95
+  MEMBER_OF: 0.90
+  NESTED_IN: 0.90
+  ASSIGNED_ROLE: 0.92
+  ASSUMES_ROLE_STRONG_CONDITION: 0.55
+  ASSUMES_ROLE: 0.82
+  CAN_IMPERSONATE: 0.84
+  CAN_MODIFY: 0.80
+  REPOSITORY_TO_PIPELINE: 0.72
+  RUNS_AS: 0.88
+  FEDERATES_TO: 0.68
+  APPROVED_ACCESS: 0.35
+ztri_weights:
+  critical_reach: 0.30
+  best_path: 0.30
+  path_diversity: 0.15
+  blast_radius: 0.15
+  control_weakness: 0.10
