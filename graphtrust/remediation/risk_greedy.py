@@ -1,12 +1,10 @@
 """B5 risk-reduction-per-cost greedy remediation baseline."""
 
 import time
+from collections import defaultdict
 
 from graphtrust.remediation.problem import RemediationProblem
-from graphtrust.remediation.verification import (
-    blocked_finding_ids,
-    build_verified_plan,
-)
+from graphtrust.remediation.verification import build_verified_plan
 from graphtrust.schemas.remediation import RemediationPlan, SolverName
 
 
@@ -20,6 +18,11 @@ def solve_risk_greedy(
     started = time.perf_counter()
     candidates = problem.removable_edges()
     paths = problem.dangerous_paths()
+    paths_by_edge = defaultdict(list)
+    for path in paths:
+        for edge_id in path.raw_edge_ids:
+            if edge_id in candidates:
+                paths_by_edge[edge_id].append(path)
     selected: set[str] = set()
     blocked: set[str] = set()
     required = target_fraction * len(paths)
@@ -28,11 +31,7 @@ def solve_risk_greedy(
         for edge_id, raw in candidates.items():
             if edge_id in selected:
                 continue
-            newly_blocked = [
-                path
-                for path in paths
-                if path.path_id not in blocked and edge_id in path.raw_edge_ids
-            ]
+            newly_blocked = [path for path in paths_by_edge[edge_id] if path.path_id not in blocked]
             reduction = sum(path.relative_exposure for path in newly_blocked)
             if reduction <= 0:
                 continue
@@ -43,7 +42,7 @@ def solve_risk_greedy(
         if best is None:
             break
         selected.add(best[2])
-        blocked = set(blocked_finding_ids(problem, tuple(selected)))
+        blocked.update(path.path_id for path in paths_by_edge[best[2]])
     return build_verified_plan(
         problem,
         solver=SolverName.RISK_GREEDY,

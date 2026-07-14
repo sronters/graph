@@ -1,6 +1,8 @@
 """Remediation solver optimality, protection, and verification tests."""
 
 import itertools
+from collections.abc import Sequence
+from typing import Any
 
 import pytest
 
@@ -202,6 +204,69 @@ def test_partial_target_and_greedy_baselines_report_verified_scope() -> None:
     assert risk.counterfactual_verified
     assert degree.protected_workflows_preserved
     assert risk.protected_workflows_preserved
+
+
+def test_degree_greedy_indexes_edge_evidence_in_one_backend_pass(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Candidate ranking must not enumerate the graph once per raw edge."""
+    problem = remediation_problem()
+    calls = 0
+    original = __import__(
+        "graphtrust.remediation.degree_baseline", fromlist=["backend_without_raw_edges"]
+    ).backend_without_raw_edges
+
+    class CountingBackend:
+        def __init__(self, delegate: Any) -> None:
+            self.delegate = delegate
+
+        def edges(self) -> Sequence[Any]:
+            nonlocal calls
+            calls += 1
+            return self.delegate.edges()
+
+        def __getattr__(self, name: str) -> Any:
+            return getattr(self.delegate, name)
+
+    def counted_backend(backend: Any, removed: Sequence[str]) -> CountingBackend:
+        return CountingBackend(original(backend, removed))
+
+    monkeypatch.setattr(
+        "graphtrust.remediation.degree_baseline.backend_without_raw_edges",
+        counted_backend,
+    )
+    solve_degree_greedy(problem, target_fraction=1.0, maximum_depth=4)
+    assert calls <= len(problem.removable_edges())
+
+
+def test_risk_greedy_indexes_paths_instead_of_rescanning_per_candidate(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Marginal scoring must enumerate the path set a bounded number of times."""
+    problem = remediation_problem()
+    paths = problem.dangerous_paths()
+    iterations = 0
+
+    class CountingPaths(Sequence[Any]):
+        def __getitem__(self, index: int) -> Any:
+            return paths[index]
+
+        def __len__(self) -> int:
+            return len(paths)
+
+        def __iter__(self):  # type: ignore[no-untyped-def]
+            nonlocal iterations
+            iterations += 1
+            return iter(paths)
+
+    counted = CountingPaths()
+    monkeypatch.setattr(
+        RemediationProblem,
+        "dangerous_paths",
+        lambda _problem: counted,
+    )
+    solve_risk_greedy(problem, target_fraction=1.0, maximum_depth=4)
+    assert iterations <= 5
 
 
 def test_constraint_generation_finds_path_omitted_from_initial_findings() -> None:

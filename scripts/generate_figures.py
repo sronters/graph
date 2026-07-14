@@ -195,7 +195,18 @@ def remediation_figure(artifact_root: Path, output: Path, tables: Path) -> None:
         value = json.loads(path.read_text(encoding="utf-8"))
         if isinstance(value, list):
             plans.extend({"source_artifact": str(path), **plan} for plan in value)
-    pl.DataFrame(plans).write_csv(tables / "04_remediation_results.csv") if plans else (
+    csv_plans = [
+        {
+            key: (
+                json.dumps(value, sort_keys=True, separators=(",", ":"))
+                if isinstance(value, (list, dict))
+                else value
+            )
+            for key, value in plan.items()
+        }
+        for plan in plans
+    ]
+    pl.DataFrame(csv_plans).write_csv(tables / "04_remediation_results.csv") if plans else (
         tables / "04_remediation_results.csv"
     ).write_text("source_artifact,plan_id,solver,target_fraction\n", encoding="utf-8")
     if not plans:

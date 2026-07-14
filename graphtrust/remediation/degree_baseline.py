@@ -1,7 +1,7 @@
 """B4 degree-priority remediation baseline."""
 
 import time
-from collections import Counter
+from collections import Counter, defaultdict
 
 from graphtrust.remediation.problem import RemediationProblem
 from graphtrust.remediation.verification import (
@@ -26,23 +26,26 @@ def solve_degree_greedy(
     while len(blocked_finding_ids(problem, selected)) < target_fraction * len(problem.findings):
         current = backend_without_raw_edges(problem.backend, selected)
         degree: Counter[str] = Counter()
+        incident_by_raw_edge: dict[str, set[str]] = defaultdict(set)
         for effective in current.edges():
             degree[effective.actor_before] += 1
             degree[effective.resource_or_identity_target] += 1
-        ranked: list[tuple[int, float, str]] = []
-        for edge_id, raw in candidates.items():
-            if edge_id in selected:
-                continue
             incident_nodes = {
                 endpoint
-                for effective in current.edges()
-                if edge_id in effective.raw_evidence_edge_ids
                 for endpoint in (
                     effective.actor_before,
                     effective.resource_or_identity_target,
                 )
                 if endpoint not in critical
             }
+            for raw_edge_id in effective.raw_evidence_edge_ids:
+                if raw_edge_id in candidates and raw_edge_id not in selected:
+                    incident_by_raw_edge[raw_edge_id].update(incident_nodes)
+        ranked: list[tuple[int, float, str]] = []
+        for edge_id, raw in candidates.items():
+            if edge_id in selected:
+                continue
+            incident_nodes = incident_by_raw_edge.get(edge_id, set())
             if incident_nodes:
                 ranked.append(
                     (
