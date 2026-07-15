@@ -1,0 +1,9 @@
+profile: global_hybrid
+display_name: Global hybrid enterprise
+departments: [Engineering, Product, Security, IT, Data, Sales, Finance, Legal, Operations, Acquired Companies]
+regions: [North America, Europe, Asia-Pacific]
+contractor_share: 0.11
+service_account_ratio: 2.4
+direct_privilege_max_share: 0.035
+conditional_access_share: 0.30
+protected_workflow_share: 0.12

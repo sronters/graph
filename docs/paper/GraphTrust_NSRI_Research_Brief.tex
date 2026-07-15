@@ -1,0 +1,212 @@
+\documentclass[10pt]{article}
+\usepackage[letterpaper,margin=0.58in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{microtype}
+\usepackage{lmodern}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{amsmath}
+\usepackage{natbib}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{lastpage}
+\usepackage{float}
+
+\definecolor{GTBlue}{HTML}{2563EB}
+\definecolor{GTInk}{HTML}{172033}
+\definecolor{GTMute}{HTML}{64748B}
+\definecolor{GTPaper}{HTML}{F8FAFC}
+\hypersetup{colorlinks=true,linkcolor=GTBlue,citecolor=GTBlue,urlcolor=GTBlue,pdfauthor={Baktiyar Ablaikhan},pdftitle={GraphTrust}}
+\color{GTInk}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{2.3pt}
+\setlist{nosep,leftmargin=1.25em}
+\captionsetup{font=footnotesize,labelfont=bf,textfont=it,skip=2pt}
+\setlength{\textfloatsep}{4pt plus 2pt minus 1pt}
+\setlength{\floatsep}{4pt plus 2pt minus 1pt}
+\setlength{\intextsep}{4pt plus 2pt minus 1pt}
+\titleformat{\section}{\large\bfseries\color{GTBlue}}{\thesection}{0.55em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.5em}{}
+\titlespacing*{\section}{0pt}{6pt}{2pt}
+\titlespacing*{\subsection}{0pt}{4pt}{1.5pt}
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\small GraphTrust · NSRI Summer Research Hackathon 2026}
+\rhead{\small AI, Data Science \& Computing}
+\cfoot{\small \thepage\ / \pageref{LastPage}}
+\renewcommand{\headrulewidth}{0.4pt}
+\input{generated/results.tex}
+
+\begin{document}
+
+\begin{center}
+{\LARGE\bfseries GraphTrust: Explainable Whole-Identity Graph Analysis\\[2pt]
+for Detecting and Reducing Multi-Hop IAM Risk}\par
+\vspace{5pt}
+{\large Baktiyar Ablaikhan}\par
+Nazarbayev Intellectual School, Kazakhstan\par
+\textbf{Track:} AI, Data Science \& Computing \quad
+\textbf{Code:} \href{https://github.com/sronters/graph}{github.com/sronters/graph}
+\end{center}
+
+\vspace{3pt}
+\noindent\fcolorbox{GTBlue}{GTPaper}{\begin{minipage}{0.965\linewidth}
+\textbf{Abstract.}
+Modern identity and access management (IAM) exposure can emerge from combinations of individually ordinary relationships among users, groups, roles, workloads, pipelines, policies, and cloud resources. This study asks whether whole-identity graph analysis turns modeled multi-hop exposure into a useful analyst queue rather than merely producing more paths. GraphTrust compiles provider-normalized IAM evidence into a directed heterogeneous capability graph, performs bounded path analysis, produces an auditable Zero Trust Risk Index (ZTRI), and recommends raw permission changes using cost-aware graph optimization. We evaluate five detection methods on SEIB-2026, a deterministic synthetic-enterprise benchmark with three organizational profiles, paired clean and injected variants, fixed final seeds, hard negatives, and truth withheld until inference completes. Primary endpoints are precision and recall at fixed review budgets, ranking quality, exhaustive recall, false-positive burden, remediation cost, and runtime. GraphTrust matches untyped traversal on total recall but concentrates more planted evidence near the top of the queue; the supplied audit reanalysis reports 18.9\% recall@10 versus 0.26\% for untyped traversal. A replicated cloud follow-up verifies proposed changes on 15 frozen organizations after application and checks protected business workflows. Results support a bounded claim: untyped reachability finds the attack surface, while typed semantics make it more reviewable, explainable, and remediable. Synthetic structure, ordinal weights, static snapshots, and bounded search limit external validity.
+\end{minipage}}
+
+\section{Research question and significance}
+
+\textbf{Question.} To what extent does typed, whole-identity graph analysis improve detection, ranking, explanation, and remediation of multi-hop paths to critical cloud resources compared with four precisely defined IAM-audit baselines?
+
+Zero Trust Architecture rejects implicit trust based on network location and requires access decisions to consider subjects, assets, resources, and policy context \citep{nist2020,nist2023}. IAM reviews that stop at direct grants can miss a low-privilege identity whose group membership, role assumption, service impersonation, or deployment authority creates transitive reachability. Existing work already demonstrates graph-based attack-path and IAM analysis; Principal Mapper, BloodHound OpenGraph, TAC, and IAMPERE are important neighboring systems \citep{pmapper,bloodhound,tac,iampere}. GraphTrust therefore does not claim to invent IAM graphs. Its contribution is a platform-neutral, truth-separated benchmark and controlled comparison that combines typed path ranking under an explicit analyst budget, decomposed risk explanations, and workflow-constrained remediation. The related-work boundary is summarized in \texttt{docs/related\_work\_matrix.md}.
+
+We pre-specified three hypotheses in commit `b226203` before the final evaluation runs: (H1) whole-identity analysis increases recall of planted transitive scenarios over direct and privileged-only audits; (H2) typed semantics improve top-ranked relevance over untyped traversal at fixed review budgets; and (H3) cost-aware cuts reduce exposure with fewer or lower-cost raw IAM changes while preserving protected workflows.
+
+\begin{table}[H]
+\centering
+\caption{Related-work boundary. GraphTrust's claim is a controlled evaluation protocol, not invention of identity graphs.}
+\small
+\begin{tabularx}{\linewidth}{lXXXXX}
+\toprule
+System & Multi-hop & Cross-platform & Truth & Ranking & Workflow check\\
+\midrule
+PMapper & Yes & AWS & No & No & No\\
+Access Analyzer & Partial & AWS & No & No & No\\
+BloodHound OpenGraph & Yes & Yes & No & Limited & Guidance\\
+TAC/IAMVulGen & Yes & AWS & Synthetic & Detection & No\\
+IAMPERE & Yes & AWS & Synthetic+real & Repair & Repair\\
+GraphTrust & Yes & Normalized & Paired truth & $K$-budget & Yes\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Method}
+
+\subsection{SEIB-2026 benchmark and experimental matrix}
+
+SEIB-2026 generates three enterprise profiles---SaaS scale-up, regulated finance, and global hybrid---rather than uniformly random graphs. Each graph contains departments, correlated group and role assignment, human and non-human identities, policies, repositories, pipelines, secrets, and multi-cloud resources. Twelve scenario families inject documented dangerous paths and hard negatives. Paired variants share the same clean base graph, so changes in detection are attributable to the injected condition rather than unrelated topology.
+
+The pre-specified design crosses 3 profiles, 2 scales, 5 held-out seeds, 3 variants, and 5 methods: 450 planned immutable runs. Confirmatory evidence is the complete 225-run small-scale half: 30 injected graph units for detection and 15 clean controls for unmatched-finding burden. Each run retains data/configuration hashes, revision, environment, outputs, timings, and checksums; truth is joined only after inference. Uncertainty uses 10,000 paired graph-level bootstrap resamples with $(profile, seed)$ clusters, Friedman tests, and Holm-corrected paired Wilcoxon follow-ups. Reachability is potential exposure, not proof of exploitation.
+
+Small graphs use a 250,000-path cap. Local medium diagnostics at caps from 250,000 to 100 exposed impractical repeated source--target search cost and are excluded. A frozen bounded follow-up and three high-RAM, checkpointed Colab notebooks exist, but were not completed in authenticated Colab; no medium/large performance result is claimed.
+
+\subsection{Graph semantics, scoring, and baselines}
+
+Raw IAM evidence is compiled into effective capability edges while retaining the semantic rule and source evidence identifiers. Conditions use three states (true, false, unknown); unknown conditions are retained conservatively and labeled. Paths are simple, bounded to eight transitions, and limited by explicit per-source and global expansion caps. For path $p$ ending at asset $t$,
+\[
+R(p)=C(t)\,S(p)\exp\!\left[-\sum_{e\in p}\bigl(-\log x_e+\tau_e+\kappa_e\bigr)\right],
+\]
+where $C$ is normalized asset criticality, $S$ starting-control weakness, $x_e$ relative exploitability, and $\tau_e,\kappa_e$ are typed-transition and condition penalties. Values are ordinal ranking parameters, not breach probabilities. ZTRI combines critical reach, best path, path diversity, blast radius, and control weakness; every component remains visible.
+
+Baselines are B0 direct (one-hop grants), B1 privileged-only (typed traversal from pre-labeled privileged starts), B2 untyped graph (unit-cost reachability), and B3 native scope (direct, group, and provider-native relationships). This avoids the inaccurate claim that commercial IAM products inspect only direct permissions. AWS Access Analyzer, for example, uses automated reasoning for supported resource and policy scopes \citep{awsanalyzer}.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/03_explainable_path.png}
+\caption{A highest-ranked path from an immutable GraphTrust run. Each transition is reproducible from raw IAM evidence; identifiers are shortened only in the visual.}
+\label{fig:path}
+\end{figure}
+
+\subsection{Counterfactual remediation}
+
+Removable raw relationships receive modeled business costs; mandatory edges and required workflows are protected. Four methods---degree greedy, risk greedy, weighted minimum cut, and iterative CP-SAT path hitting set---receive the same target. The verifier removes proposed raw edges, removes every effective transition supported by them, reruns bounded reachability, and then checks capability-specific protected workflows. Counterfactual verification records that the plan was applied and workflows remained reachable; target attainment is reported separately by comparing achieved weighted reduction with the requested threshold. Recommendations never modify live permissions.
+
+\section{Results}
+
+\subsection{Detection and ranking}
+
+The final small-scale matrix contains \SmallRunCount\ checksum-verified runs. On injected graphs, GraphTrust achieved mean risky-identity recall \GraphtrustRiskyRecall\ and scenario recall \GraphtrustScenarioRecall, compared with \DirectRiskyRecall/\DirectScenarioRecall\ for direct audit, \PrivilegedRiskyRecall/\PrivilegedScenarioRecall\ for privileged-only audit, \NativeScopeRiskyRecall/\NativeScopeScenarioRecall\ for native scope, and \UntypedRiskyRecall/\UntypedScenarioRecall\ for untyped traversal. Thus H1 is supported against the narrow audit baselines but not against untyped whole-graph reachability.
+
+The more informative separation appears in ranking. GraphTrust reached NDCG@10 \GraphtrustNdcgTen, versus \UntypedNdcgTen\ for untyped traversal and \NativeScopeNdcgTen\ for native scope. The review-budget reanalysis supplied with this revision reports exact-path recall@\ReviewBudgetK\ of \GraphtrustRecallAtTenBudget\ for GraphTrust versus \UntypedRecallAtTenBudget\ for untyped traversal, with precision@\ReviewBudgetK\ of \GraphtrustPrecisionAtTenBudget\ versus \UntypedPrecisionAtTenBudget. MRR is \GraphtrustMrr\ versus \UntypedMrr. These are the operational endpoint: typed conditions and transition costs concentrate useful evidence near the top even when exhaustive recall ties. GraphTrust exact-path recall was \GraphtrustExactPathRecall\ versus \UntypedExactPathRecall\ for untyped traversal; the paired difference was \VsUntypedExactPathRecallDifference\ (95\% CI \VsUntypedExactPathRecallCI). On clean controls, GraphTrust produced \GraphtrustCleanBurden\ unmatched paths per 1,000 identities, close to untyped traversal at \UntypedCleanBurden. An unmatched synthetic path is not necessarily a real false alarm, but the volume shows why reachability must be ranked and reviewed rather than treated as an incident list.
+
+Paired differences make the boundary explicit. Against untyped traversal, the risky-identity-recall difference was \VsUntypedRiskyRecallDifference\ (95\% bootstrap CI \VsUntypedRiskyRecallCI), while the NDCG@10 difference was \VsUntypedNdcgTenDifference\ (95\% CI \VsUntypedNdcgTenCI). The five-method Friedman tests gave $p=\FriedmanRiskyRecallP$ for risky-identity recall and $p=\FriedmanNdcgTenP$ for NDCG@10. Inferential tests use the enterprise graph, not each reported path, as the independent paired unit.
+
+\begin{figure}[t]
+\centering
+\begin{subfigure}[t]{0.49\linewidth}
+\includegraphics[width=\linewidth]{figures/15_review_budget_curve.png}
+\caption{Analyst review-budget curve.}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.49\linewidth}
+\includegraphics[width=\linewidth]{figures/12_paired_differences.png}
+\caption{Graph-level paired differences; depth stress is a declared supplement.}
+\end{subfigure}
+\caption{The primary operational endpoint is reviewable evidence, with path-depth results reported separately from the confirmatory aggregate.}
+\label{fig:detection}
+\end{figure}
+
+\subsection{Remediation and scalability}
+
+A declared GitHub Actions follow-up replicated remediation across 15 independent $(profile,seed)$ organizations. Weighted minimum cut reduced modeled exposure by 97.71\% on average (cluster-bootstrap 95\% CI [97.48\%, 97.95\%]) using 28.13 mean raw IAM changes at modeled cost 22.96 and mean runtime 3.62 seconds. All 15 plans attained the 95\% target, passed post-application graph recompilation, and preserved every encoded workflow. At the 95\% request, risk greedy achieved 87.06\% mean reduction, constraint generation 81.00\%, and degree greedy 73.33\%; their counterfactuals and workflows verified even when the requested weighted target was not attained. Weighted min-cut returns one unique plan per graph across the five threshold checks, so inference uses $n=15$, not the 75 repeated CSV rows.
+
+
+\begin{table}[H]
+\centering
+\caption{Replicated remediation at the 95\% requested reduction (15 independent organizations). Verification and target attainment are separate outcomes.}
+\label{tab:replicated-remediation}
+\small
+\begin{tabular}{lrrrr}
+\toprule
+Method & Achieved & Cost & Changes & Runtime\\
+\midrule
+Weighted min-cut & \textbf{97.71\%} & 22.96 & 28.13 & 3.37 s\\
+Risk greedy & 87.06\% & 7.55 & 11.33 & 0.56 s\\
+Constraint generation & 81.00\% & 245.31 & 112.60 & 123.37 s\\
+Degree greedy & 73.33\% & 1430.92 & 877.20 & 449.25 s\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\begin{subfigure}[t]{0.49\linewidth}
+\includegraphics[width=\linewidth]{figures/06_remediation_frontier.png}
+\caption{Registered-instance remediation frontier; Table~\ref{tab:replicated-remediation} reports the 15-organization follow-up.}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.49\linewidth}
+\includegraphics[width=\linewidth]{figures/07_runtime_memory_scaling.png}
+\caption{Runtime distribution on fixed-size graphs; not a scaling claim.}
+\end{subfigure}
+\caption{Operational trade-offs are reported together with post-application verification and resource use.}
+\label{fig:operations}
+\end{figure}
+
+\section{Limitations and threats to validity}
+
+Synthetic structure does not establish real-world prevalence. Injected truth may favor aligned methods, while unlabeled plausible paths lower measured precision. Weights, removal costs, asset labels, and protected workflows are generated assumptions. Provider normalization omits some policy exceptions, sessions, denies, and temporal conditions; bounded top-$K$ search can omit paths. Three profiles are not a representative company sample. The frozen depth follow-up contains no one-hop planted risk, so its direct-audit zero is benchmark-conditional. Weighted min-cut solves a different objective from the path-count constraint generator, and target attainment must not be inferred from counterfactual verification alone. Reachability is potential exposure, not intent, exploit success, or incident probability.
+
+\section{Conclusion and impact}
+
+In SEIB-2026, whole-identity reachability reveals transitive paths missed by direct and privileged-only audits. Untyped traversal finds much of the same attack surface, but typed semantics improve the concentration of relevant evidence under a finite analyst budget, preserve hop-level provenance, and support explanations. Across 15 frozen organizations, weighted min-cut remediation reduced modeled exposure by 97.71\% on average while preserving every encoded workflow; counterfactual recompilation maps choke points back to raw IAM changes and verifies their modeled effect. GraphTrust therefore complements provider-native IAM tools; it is not autonomous enforcement evidence or a claim of universal recall superiority.
+
+\clearpage
+\begin{thebibliography}{99}
+\bibitem[Amazon Web Services(2026)]{awsanalyzer} Amazon Web Services. (2026). \textit{IAM Access Analyzer concepts and findings}. \url{https://docs.aws.amazon.com/IAM/latest/UserGuide/access-analyzer-concepts.html}
+\bibitem[SpecterOps(2026)]{bloodhound} SpecterOps. (2026). \textit{BloodHound: Six degrees of domain admin}. \url{https://github.com/SpecterOps/BloodHound}
+\bibitem[Csárdi and Nepusz(2006)]{igraph} Csárdi, G., \& Nepusz, T. (2006). The igraph software package for complex network research. \textit{InterJournal, Complex Systems}, 1695.
+\bibitem[Hagberg et~al.(2008)]{networkx} Hagberg, A. A., Schult, D. A., \& Swart, P. J. (2008). Exploring network structure, dynamics, and function using NetworkX. In \textit{Proceedings of the 7th Python in Science Conference} (pp. 11--15).
+\bibitem[NCC Group(2022)]{pmapper} NCC Group. (2022). \textit{Principal Mapper (PMapper)}. \url{https://github.com/nccgroup/PMapper}
+\bibitem[National Institute of Standards and Technology(2020)]{nist2020} National Institute of Standards and Technology. (2020). \textit{Zero trust architecture} (Special Publication 800-207). \url{https://doi.org/10.6028/NIST.SP.800-207}
+\bibitem[National Institute of Standards and Technology(2023)]{nist2023} National Institute of Standards and Technology. (2023). \textit{A zero trust architecture model for access control in cloud-native applications in multi-cloud environments} (Special Publication 800-207A). \url{https://doi.org/10.6028/NIST.SP.800-207A}
+\bibitem[Hu et~al.(2023a)]{tac} Hu, Y., Wang, W., Khurshid, S., McMillan, K. L., \& Tiwari, M. (2023). TAC/IAMVulGen and related permission-flow-graph IAM analysis, discussed in the IAMPERE paper. \url{https://spark.ece.utexas.edu/pubs/ASE-23-yang.pdf}
+\bibitem[Hu et~al.(2023b)]{iampere} Hu, Y., Wang, W., Khurshid, S., McMillan, K. L., \& Tiwari, M. (2023). Fixing privilege escalations in cloud access control with MaxSAT and graph neural networks (IAMPERE). In \textit{Proceedings of the 38th IEEE/ACM International Conference on Automated Software Engineering}. \url{https://spark.ece.utexas.edu/pubs/ASE-23-yang.pdf}
+\bibitem[Perron et~al.(2023)]{cpsat} Perron, L., Didier, F., \& Gay, S. (2023). The CP-SAT-LP solver. In \textit{29th International Conference on Principles and Practice of Constraint Programming} (pp. 3:1--3:2). Schloss Dagstuhl. \url{https://doi.org/10.4230/LIPIcs.CP.2023.3}
+\bibitem[Sheyner et~al.(2002)]{attackgraphs} Sheyner, O., Haines, J., Jha, S., Lippmann, R., \& Wing, J. M. (2002). Automated generation and analysis of attack graphs. In \textit{Proceedings of the 2002 IEEE Symposium on Security and Privacy} (pp. 273--284). \url{https://doi.org/10.1109/SECPRI.2002.1004377}
+\end{thebibliography}
+
+\section*{AI Use Transparency Statement}
+OpenAI Codex assisted with interpreting the project specification, implementing and reviewing code, diagnosing scale and verification defects, running local automated experiments, generating figures, and editing this brief. The author directed the research question and remains responsible for understanding the method, reviewing every claim, verifying citations, and submitting the work. Synthetic data are produced by deterministic repository code; no real company or personal IAM data were used. Numerical claims are generated only from checksum-verified run artifacts or are explicitly labeled as the operator's review-budget audit reanalysis in \texttt{docs/audit\_recalculation\_notes.md}. AI was not used to fabricate citations, experimental outcomes, collaborators, or human review. The public Docker workflow now builds and starts both services with health checks. The three large Colab notebooks were prepared but not executed; they record environment data and immutable receipts when run.
+
+\section*{Appendix A: Reproducibility and experiment matrix}
+The repository pins Python dependencies, provides Docker and Compose definitions, and stores three profile-specific Colab notebooks with high-RAM gates, resume checkpoints, and receipts. The complete design is $3\times2\times5\times3\times5=450$ planned small/medium runs, plus three large profile launches at one held-out seed. The completed evidence set is 225/225 small detection runs plus a 15-organization cloud follow-up containing 1,350 depth rows and 300 remediation checks; 225 medium runs and all three authenticated Colab receipts remain pending. Immutable run IDs derive from the dataset checksum, resolved configuration, git commit, and method. The final report treats $(profile, seed)$ as the independent cluster and emits \texttt{docs/evidence/evidence\_manifest.csv}; a traceability validator rejects missing or corrupt artifacts before report generation. Figures are exported as SVG and 300-dpi PNG and retain source run IDs in accompanying tables.
+
+\end{document}

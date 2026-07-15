@@ -1,0 +1,33 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      GRAPHTRUST_DATA_ROOT: /app/data
+      GRAPHTRUST_ARTIFACT_ROOT: /app/artifacts
+      GRAPHTRUST_DATABASE_PATH: /app/artifacts/graphtrust.duckdb
+    # The host bind mount is often root-owned on CI and Docker Desktop. The
+    # immutable image default remains the unprivileged graphtrust user; this
+    # Compose-only override lets DuckDB create the mounted artifact database.
+    user: "0:0"
+    volumes:
+      - ./data:/app/data:ro
+      - ./artifacts:/app/artifacts
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "8080:8080"

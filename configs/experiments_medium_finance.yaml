@@ -1,0 +1,10 @@
+schema_version: "1.0"
+benchmark: SEIB-2026
+profiles: [regulated_finance]
+scales: [medium]
+development_seeds: [104729, 130363, 155921, 196613, 249989]
+final_seeds: [2750159, 3681131, 4264387, 5000011, 6500027]
+variants: [clean, injected_low, injected_mixed]
+methods: [direct, privileged, untyped, native_scope, graphtrust]
+remediation_methods: [degree_greedy, risk_greedy, min_cut, constraint_generation]
+large_profile_seed_count: 1

@@ -1,0 +1,7 @@
+source,method,review_budget,recall,precision,mrr
+operator_audit_reanalysis,graphtrust,5,0.107,,0.0549
+operator_audit_reanalysis,graphtrust,10,0.189,0.103,0.0549
+operator_audit_reanalysis,graphtrust,20,0.337,,0.0549
+operator_audit_reanalysis,untyped,5,0.000,,0.0053
+operator_audit_reanalysis,untyped,10,0.0026,0.0033,0.0053
+operator_audit_reanalysis,untyped,20,0.016,,0.0053

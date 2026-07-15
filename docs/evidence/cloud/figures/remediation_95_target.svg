@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">Remediation performance at the 95 percent requested target</title>
+  <desc id="desc">Comparison of mean achieved exposure reduction, cost and number of changes across four remediation solvers on 15 independent graphs.</desc>
+  <rect width="1200" height="760" fill="#07111f"/>
+  <text x="70" y="72" fill="#f8fafc" font-family="Inter,Arial,sans-serif" font-size="34" font-weight="700">Replicated remediation at the 95% requested target</text>
+  <text x="70" y="110" fill="#94a3b8" font-family="Inter,Arial,sans-serif" font-size="18">15 independent organizations · counterfactual verification and workflows passed for every plan</text>
+  <line x1="120" y1="630" x2="1130" y2="630" stroke="#334155" stroke-width="2"/>
+  <line x1="120" y1="170" x2="120" y2="630" stroke="#334155" stroke-width="2"/>
+  <line x1="120" y1="400" x2="1130" y2="400" stroke="#1e293b" stroke-width="1" stroke-dasharray="8 8"/>
+  <line x1="120" y1="285" x2="1130" y2="285" stroke="#1e293b" stroke-width="1" stroke-dasharray="8 8"/>
+  <line x1="120" y1="193" x2="1130" y2="193" stroke="#fb7185" stroke-width="2" stroke-dasharray="10 8"/>
+  <text x="82" y="636" fill="#94a3b8" font-family="Inter,Arial,sans-serif" font-size="16">0%</text>
+  <text x="70" y="406" fill="#94a3b8" font-family="Inter,Arial,sans-serif" font-size="16">50%</text>
+  <text x="70" y="291" fill="#94a3b8" font-family="Inter,Arial,sans-serif" font-size="16">75%</text>
+  <text x="67" y="199" fill="#fb7185" font-family="Inter,Arial,sans-serif" font-size="16">95%</text>
+  <text x="48" y="370" fill="#cbd5e1" font-family="Inter,Arial,sans-serif" font-size="17" transform="rotate(-90 48 370)">Mean achieved weighted exposure reduction</text>
+  <rect x="185" y="180" width="150" height="450" rx="12" fill="#22c55e"/>
+  <rect x="425" y="229" width="150" height="401" rx="12" fill="#38bdf8"/>
+  <rect x="665" y="257" width="150" height="373" rx="12" fill="#a78bfa"/>
+  <rect x="905" y="293" width="150" height="337" rx="12" fill="#f59e0b"/>
+  <text x="260" y="163" text-anchor="middle" fill="#86efac" font-family="Inter,Arial,sans-serif" font-size="25" font-weight="700">97.71%</text>
+  <text x="500" y="212" text-anchor="middle" fill="#7dd3fc" font-family="Inter,Arial,sans-serif" font-size="25" font-weight="700">87.06%</text>
+  <text x="740" y="240" text-anchor="middle" fill="#c4b5fd" font-family="Inter,Arial,sans-serif" font-size="25" font-weight="700">81.00%</text>
+  <text x="980" y="276" text-anchor="middle" fill="#fcd34d" font-family="Inter,Arial,sans-serif" font-size="25" font-weight="700">73.33%</text>
+  <text x="260" y="666" text-anchor="middle" fill="#f8fafc" font-family="Inter,Arial,sans-serif" font-size="19" font-weight="600">Weighted min-cut</text>
+  <text x="500" y="666" text-anchor="middle" fill="#f8fafc" font-family="Inter,Arial,sans-serif" font-size="19" font-weight="600">Risk greedy</text>
+  <text x="740" y="666" text-anchor="middle" fill="#f8fafc" font-family="Inter,Arial,sans-serif" font-size="19" font-weight="600">Constraint generation</text>
+  <text x="980" y="666" text-anchor="middle" fill="#f8fafc" font-family="Inter,Arial,sans-serif" font-size="19" font-weight="600">Degree greedy</text>
+  <text x="260" y="700" text-anchor="middle" fill="#94a3b8" font-family="Inter,Arial,sans-serif" font-size="16">cost 22.96 · 28.13 changes · 3.62 s</text>
+  <text x="500" y="700" text-anchor="middle" fill="#94a3b8" font-family="Inter,Arial,sans-serif" font-size="16">cost 7.55 · 11.33 changes · 0.56 s</text>
+  <text x="740" y="700" text-anchor="middle" fill="#94a3b8" font-family="Inter,Arial,sans-serif" font-size="16">cost 245.31 · 112.60 changes · 123.37 s</text>
+  <text x="980" y="700" text-anchor="middle" fill="#94a3b8" font-family="Inter,Arial,sans-serif" font-size="16">cost 1430.92 · 877.20 changes · 449.25 s</text>
+</svg>

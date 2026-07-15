@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use GraphTrust, cite this software and the generated run manifest."
+title: "GraphTrust: Explainable Whole-Identity Graph Analysis"
+type: software
+authors:
+  - name: "GraphTrust contributors"
+repository-code: "https://github.com/sronters/graph"
+license: Apache-2.0
+version: 0.1.0
+date-released: 2026-07-14

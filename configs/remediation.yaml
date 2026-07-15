@@ -1,0 +1,15 @@
+schema_version: "1.0"
+objective:
+  change_penalty: 0.05
+  residual_exposure_penalty: 1.0
+targets: [0.80, 0.90, 1.00]
+solver:
+  time_limit_seconds: 120
+  iteration_cap: 100
+  max_alternatives: 5
+  alternative_cost_tolerance: 0.20
+constraints:
+  maximum_changes: null
+  maximum_cost: null
+  maximum_changes_by_department: {}
+  maximum_changes_by_provider: {}

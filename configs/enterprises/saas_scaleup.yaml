@@ -1,0 +1,9 @@
+profile: saas_scaleup
+display_name: SaaS scale-up
+departments: [Engineering, Product, Security, IT, Data, Sales, Customer Success, Finance, Legal, People Operations]
+regions: [North America, Europe]
+contractor_share: 0.14
+service_account_ratio: 1.8
+direct_privilege_max_share: 0.04
+conditional_access_share: 0.22
+protected_workflow_share: 0.08

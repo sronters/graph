@@ -1,0 +1,10 @@
+schema_version: "1.0"
+benchmark: SEIB-2026-smoke
+profiles: [saas_scaleup]
+scales: [small]
+development_seeds: []
+final_seeds: [104729]
+variants: [injected_mixed]
+methods: [direct, privileged, untyped, native_scope, graphtrust]
+remediation_methods: [degree_greedy, risk_greedy, min_cut, constraint_generation]
+large_profile_seed_count: 1
