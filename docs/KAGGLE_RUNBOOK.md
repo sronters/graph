@@ -5,6 +5,14 @@ and a CPU runtime exposing at least 20 GiB of available RAM. The workload does
 not use a GPU. Kaggle's `/kaggle/working` is used for checkpoints and
 `/kaggle/outputs` receives the verified archive and receipt.
 
+If the notebook reports `Could not resolve host: github.com`, Internet is off in
+the Kaggle session. Turn on Notebook **Settings → Internet** and restart the
+session. If Internet cannot be enabled, attach a Kaggle Dataset mounted at
+`/kaggle/input/graphtrust-source` containing `GraphTrust_NSRI_Main_Source.zip`
+and a text file `GRAPHTRUST_SOURCE_COMMIT.txt` containing the expected `main`
+commit. The notebook has an offline source fallback and records its mode in the
+receipt.
+
 ## Notebooks and order
 
 1. `notebooks/GraphTrust_Kaggle_Large_saas_scaleup.ipynb`

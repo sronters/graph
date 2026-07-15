@@ -87,6 +87,11 @@ def main() -> None:
     git_result = subprocess.run(
         ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=False
     )
+    git_commit = (
+        git_result.stdout.strip()
+        if git_result.returncode == 0
+        else os.getenv("GRAPHTRUST_SOURCE_COMMIT", "unknown")
+    )
     hosted_platform = execution_platform()
     receipt = {
         "created_at": datetime.now(UTC).isoformat(),
@@ -97,7 +102,7 @@ def main() -> None:
         "is_kaggle": hosted_platform == "kaggle",
         "colab_release_tag": os.getenv("COLAB_RELEASE_TAG"),
         "kaggle_kernel_run_type": os.getenv("KAGGLE_KERNEL_RUN_TYPE"),
-        "git_commit": git_result.stdout.strip() if git_result.returncode == 0 else "unknown",
+        "git_commit": git_commit,
         "config_path": str(arguments.config),
         "config_sha256": sha256_file(arguments.config),
         "data_root": str(arguments.data_root),

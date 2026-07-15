@@ -35,3 +35,7 @@ runtime with at least 20 GiB available RAM, and retain the ZIP plus
 `*_kaggle_receipt.json` from `/kaggle/outputs`. The receipt must report
 `execution_platform: "kaggle"` and `is_kaggle: true`; otherwise the run is not
 valid hosted evidence.
+If Kaggle reports `Could not resolve host: github.com`, turn on Notebook
+**Settings → Internet** and restart the session. The launchers also support an
+offline `/kaggle/input/graphtrust-source` dataset containing the source ZIP and
+`GRAPHTRUST_SOURCE_COMMIT.txt`.
