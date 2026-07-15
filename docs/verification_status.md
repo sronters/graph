@@ -79,10 +79,11 @@ and the experiment does not establish real-world global minimality.
   result cells.
 - The frozen medium follow-up configuration uses igraph, depth 6, a 100-path
   global cap, and one path per source and source--target pair.
-- Three profile-specific large Colab notebooks are complete, JSON-valid, and
-  include high-RAM gates, checkpoint/resume, immutable verification, receipts,
-  and artifact download. They have **not** been executed in authenticated
-  Google Colab, so no Colab runtime/memory result is claimed.
+- Three profile-specific large Colab notebooks and three Kaggle equivalents are
+  complete and JSON-valid. They include hosted-runtime gates,
+  checkpoint/resume, immutable verification, receipts, and artifact export.
+  They have **not** been executed with an authenticated hosted receipt, so no
+  Colab or Kaggle runtime/memory result is claimed yet.
 
 ## Docker boundary
 
@@ -96,12 +97,13 @@ This is the authoritative Docker startup verification.
 
 The final gate completed with these results:
 
-- Ruff format check: 121 files formatted; Ruff lint: pass.
-- strict MyPy: 96 source files, no issues.
-- Pytest: 121 passed; one third-party Starlette deprecation warning.
+- Ruff format check: 126 files formatted; Ruff lint: pass.
+- strict MyPy: 89 source files, no issues.
+- Pytest: 125 passed, one deselected performance test; one third-party Starlette
+  deprecation warning.
 - Frontend: TypeScript lint/typecheck pass; Vitest 3/3 pass; Vite production
   build pass.
-- Four Colab notebooks: JSON structure valid.
+- Four Colab and three Kaggle notebooks: JSON structure valid.
 - Traceability: 225 verified run IDs in the confirmatory evidence ledger, 16
   figures, and review-budget/depth tables; no missing or
   corrupt referenced artifact.
@@ -115,5 +117,5 @@ The final gate completed with these results:
 The small-scale confirmatory study, clustered statistical analysis, 15-graph
 counterfactual remediation replication, depth follow-up, figures, and paper
 inputs are complete. Docker startup is verified by public CI. The 225-run
-medium scalability extension and three authenticated large Colab receipts
+medium scalability extension and three authenticated large hosted receipts
 remain pending and must not be described as executed.

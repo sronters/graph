@@ -25,3 +25,13 @@ uv run python scripts/run_remediation_replication.py --dataset-root data/generat
 
 Large Colab notebooks are prepared launchers and require an authenticated
 high-RAM Colab receipt before their runtime/memory numbers can be cited.
+
+## Kaggle large-run alternative
+
+When Colab does not expose a high-RAM runtime, use the Kaggle launchers in
+`notebooks/GraphTrust_Kaggle_Large_*.ipynb` and follow
+[`docs/KAGGLE_RUNBOOK.md`](docs/KAGGLE_RUNBOOK.md). Enable Internet, use a CPU
+runtime with at least 20 GiB available RAM, and retain the ZIP plus
+`*_kaggle_receipt.json` from `/kaggle/outputs`. The receipt must report
+`execution_platform: "kaggle"` and `is_kaggle: true`; otherwise the run is not
+valid hosted evidence.

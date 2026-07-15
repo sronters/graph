@@ -23,6 +23,16 @@ from graphtrust.settings import load_project_config
 PROFILES = ("saas_scaleup", "regulated_finance", "global_hybrid")
 
 
+def execution_platform() -> str:
+    """Identify the hosted runner without treating local runs as evidence."""
+
+    if os.getenv("KAGGLE_KERNEL_RUN_TYPE") or os.getenv("KAGGLE_URL_BASE"):
+        return "kaggle"
+    if os.getenv("COLAB_RELEASE_TAG"):
+        return "google_colab"
+    return "local"
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-root", type=Path, default=Path("data/generated"))
@@ -77,12 +87,16 @@ def main() -> None:
     git_result = subprocess.run(
         ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=False
     )
+    hosted_platform = execution_platform()
     receipt = {
         "created_at": datetime.now(UTC).isoformat(),
         "started_at": run_started.isoformat(),
         "elapsed_seconds": round(time.perf_counter() - overall_clock, 6),
-        "is_google_colab": "COLAB_RELEASE_TAG" in os.environ,
+        "execution_platform": hosted_platform,
+        "is_google_colab": hosted_platform == "google_colab",
+        "is_kaggle": hosted_platform == "kaggle",
         "colab_release_tag": os.getenv("COLAB_RELEASE_TAG"),
+        "kaggle_kernel_run_type": os.getenv("KAGGLE_KERNEL_RUN_TYPE"),
         "git_commit": git_result.stdout.strip() if git_result.returncode == 0 else "unknown",
         "config_path": str(arguments.config),
         "config_sha256": sha256_file(arguments.config),

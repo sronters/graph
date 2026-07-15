@@ -67,18 +67,22 @@ injected-mixed graph at seed 2,750,159:
 2. `GraphTrust_Colab_Large_regulated_finance.ipynb`
 3. `GraphTrust_Colab_Large_global_hybrid.ipynb`
 
-Each notebook refuses to certify a result unless `COLAB_RELEASE_TAG` is present,
-the immutable run directory verifies, and the runtime has at least 10 GiB of
-RAM. Large launches use a 10,000 global path cap and are treated as scalability
-evidence rather than as additional units in the primary hypothesis test. The
-receipt stores the realized graph counts, dataset checksum, run ID,
-Python/platform information, Colab release tag, verification result, runtime,
-and peak memory. Local executions are useful diagnostics but are never labeled
-as Colab evidence.
+Kaggle equivalents are provided as `GraphTrust_Kaggle_Large_*.ipynb` and use
+the same frozen seed, profile set, and bounded analysis protocol.
 
-Submission status: all three notebooks are complete and structurally
-validated, but none has an authenticated Colab receipt yet. They must be
-described as prepared launches, not completed large runs.
+Each notebook refuses to certify a result unless the hosted-runtime marker is
+present, the immutable run directory verifies, and the runtime has at least
+20 GiB of RAM. Large launches use the bounded scalability configuration and are
+treated as scalability evidence rather than as additional units in the primary
+hypothesis test. The receipt stores the realized graph counts, dataset checksum,
+run ID, Python/platform information, provider marker, verification result,
+runtime, and peak memory. Local executions are useful diagnostics but are never
+labeled as hosted evidence.
+
+Submission status: the Colab notebooks are prepared launches. Kaggle equivalents
+are provided in `notebooks/GraphTrust_Kaggle_Large_*.ipynb`; they become
+empirical large-run evidence only after a Kaggle output archive and verified
+receipt are retained.
 
 ## Execution commands
 

@@ -52,10 +52,11 @@ reduced modeled exposure by 97.71% on average (cluster-bootstrap 95% CI
 [97.48%, 97.95%]) using 28.13 mean raw IAM changes; all 15 counterfactuals and
 protected workflows verified.
 
-For hosted execution, follow the [large-run Colab runbook](docs/COLAB_RUNBOOK.md).
-The three profile notebooks use a CPU high-RAM runtime, persist checkpoints to
-Google Drive, run a fail-fast integration test, and export checksum-verifiable
-receipts. An unexecuted notebook is never treated as empirical evidence.
+For hosted execution, follow the [Kaggle large-run runbook](docs/KAGGLE_RUNBOOK.md)
+or the [Colab runbook](docs/COLAB_RUNBOOK.md). The Kaggle notebooks use a CPU
+runtime with at least 20 GiB RAM, persist checkpoints under `/kaggle/working`,
+and export checksum-verifiable receipts under `/kaggle/outputs`. An unexecuted
+notebook is never treated as empirical evidence.
 
 ## API and dashboard
 
