@@ -148,11 +148,29 @@ Paired differences make the boundary explicit. Against untyped traversal, the ri
 
 A declared GitHub Actions follow-up replicated remediation across 15 independent $(profile,seed)$ organizations. Weighted minimum cut reduced modeled exposure by 97.71\% on average (cluster-bootstrap 95\% CI [97.48\%, 97.95\%]) using 28.13 mean raw IAM changes at modeled cost 22.96 and mean runtime 3.62 seconds. All 15 plans attained the 95\% target, passed post-application graph recompilation, and preserved every encoded workflow. At the 95\% request, risk greedy achieved 87.06\% mean reduction, constraint generation 81.00\%, and degree greedy 73.33\%; their counterfactuals and workflows verified even when the requested weighted target was not attained. Weighted min-cut returns one unique plan per graph across the five threshold checks, so inference uses $n=15$, not the 75 repeated CSV rows.
 
+
+\begin{table}[H]
+\centering
+\caption{Replicated remediation at the 95\% requested reduction (15 independent organizations). Verification and target attainment are separate outcomes.}
+\label{tab:replicated-remediation}
+\small
+\begin{tabular}{lrrrr}
+\toprule
+Method & Achieved & Cost & Changes & Runtime\\
+\midrule
+Weighted min-cut & \textbf{97.71\%} & 22.96 & 28.13 & 3.37 s\\
+Risk greedy & 87.06\% & 7.55 & 11.33 & 0.56 s\\
+Constraint generation & 81.00\% & 245.31 & 112.60 & 123.37 s\\
+Degree greedy & 73.33\% & 1430.92 & 877.20 & 449.25 s\\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \begin{figure}[t]
 \centering
 \begin{subfigure}[t]{0.49\linewidth}
 \includegraphics[width=\linewidth]{figures/06_remediation_frontier.png}
-\caption{Verified remediation cost--exposure frontier.}
+\caption{Registered-instance remediation frontier; Table~\ref{tab:replicated-remediation} reports the 15-organization follow-up.}
 \end{subfigure}\hfill
 \begin{subfigure}[t]{0.49\linewidth}
 \includegraphics[width=\linewidth]{figures/07_runtime_memory_scaling.png}
