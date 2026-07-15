@@ -32,9 +32,9 @@ runtime. It is not an exhaustive large-graph recall experiment.
 The final cell downloads two files:
 
 - `GraphTrust_large_<profile>_2750159.zip`
-- `download_receipt.json`
+- `GraphTrust_large_<profile>_2750159_download_receipt.json`
 
 A result is usable only when `large_run_receipt.json` records
 `is_google_colab: true`, the profile records `verified: true`, and the ZIP hash
-matches `archive_sha256` in `download_receipt.json`. Keep all three ZIPs and all
+matches `archive_sha256` in the corresponding receipt. Keep all three ZIPs and all
 three receipts; do not rename or edit their contents before verification.

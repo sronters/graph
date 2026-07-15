@@ -126,15 +126,16 @@ def notebook(profile: str, label: str) -> dict[str, object]:
                 "        archive_digest.update(chunk)\n"
                 "archive_sha256 = archive_digest.hexdigest()\n"
                 "download_receipt = {'archive': archive.name, 'archive_sha256': archive_sha256, 'git_commit': COMMIT, 'profile': PROFILE, 'seed': SEED}\n"
-                "(export_root / 'download_receipt.json').write_text(json.dumps(download_receipt, indent=2, sort_keys=True) + '\\n')\n"
+                "download_receipt_path = export_root / f'GraphTrust_large_{PROFILE}_{SEED}_download_receipt.json'\n"
+                "download_receipt_path.write_text(json.dumps(download_receipt, indent=2, sort_keys=True) + '\\n')\n"
                 "print(download_receipt)\n"
                 "files.download(str(archive))\n"
-                "files.download(str(export_root / 'download_receipt.json'))\n"
+                "files.download(str(download_receipt_path))\n"
             ),
             markdown(
                 "## What to send back\n\n"
                 "Send the downloaded `GraphTrust_large_<profile>_<seed>.zip` and "
-                "`download_receipt.json`. Do not report runtime or memory numbers unless "
+                "`GraphTrust_large_<profile>_<seed>_download_receipt.json`. Do not report runtime or memory numbers unless "
                 "the receipt says `is_google_colab: true` and every profile says `verified: true`."
             ),
         ],
