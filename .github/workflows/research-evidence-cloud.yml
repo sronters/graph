@@ -1,15 +1,15 @@
 name: research-evidence-cloud
 
 on:
-  push:
+  pull_request:
     branches:
-      - agent/graphtrust-winning-evidence
+      - codex/graphtrust-implementation
     paths:
       - .github/workflows/research-evidence-cloud.yml
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: graphtrust-research-evidence-${{ github.ref }}
@@ -236,16 +236,6 @@ jobs:
               encoding="utf-8",
           )
           PY
-
-      - name: Commit complete verified evidence
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add results/cloud/depth_stress_15_graphs.csv
-          git add results/cloud/remediation_replication_15_graphs.csv
-          git add results/cloud/evidence_manifest.json
-          git commit -m "Add replicated cloud research evidence"
-          git push
 
       - name: Upload aggregated evidence
         uses: actions/upload-artifact@v4
