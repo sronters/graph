@@ -1,4 +1,4 @@
-.PHONY: sync lint format-check typecheck test frontend-quality quality
+.PHONY: sync lint format-check typecheck test frontend-quality paper quality
 
 sync:
 	uv sync --all-extras
@@ -20,5 +20,8 @@ frontend-quality:
 	npm --prefix frontend run typecheck
 	npm --prefix frontend run test
 	npm --prefix frontend run build
+
+paper:
+	$(MAKE) -C docs/paper
 
 quality: lint format-check typecheck test frontend-quality

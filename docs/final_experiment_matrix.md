@@ -56,7 +56,7 @@ capability-specific protected workflows remain reachable. GitHub Actions run `29
 and the strict aggregate gate. Weighted minimum cut produced 15 unique graph
 plans; the same plan is repeated across five threshold checks and is therefore
 analyzed with n=15, not n=75. The immutable CSVs, manifest, hashes, clustered
-summary, and data-backed SVG figures are checked into `results/cloud/`.
+summary, and data-backed SVG figures are checked into `docs/evidence/cloud/`.
 
 ## Large-profile launches
 

@@ -265,7 +265,7 @@ def bar_metric(
 def review_budget_figure(rows: list[dict[str, Any]], output: Path, tables: Path) -> None:
     """Show the operational review queue rather than only exhaustive recall."""
     selected = [row for row in rows if row.get("variant") != "clean"]
-    audit_path = Path("results/review_budget_summary.csv")
+    audit_path = Path("docs/evidence/review_budget_summary.csv")
     audit_frame = pl.read_csv(audit_path) if audit_path.is_file() else pl.DataFrame()
     audit_mode = not selected or "precision_at_50" not in selected[0]
     if audit_mode and audit_frame.is_empty():

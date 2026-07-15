@@ -63,7 +63,8 @@ and the experiment does not establish real-world global minimality.
   Spearman rank correlation 0.9969 and minimum 0.928.
 - Final report inputs: checksum-validated result JSON/CSV and generated LaTeX
   macros.
-- Figures: 18 publication figures in SVG and 300-dpi PNG; the paper includes a
+- Figures: 17 publication figures in 300-dpi PNG, with selected figures also
+  available as SVG; the paper includes a
   graph attack-surface atlas, explainable path, paired effect plot, ranking and
   recall charts, remediation frontier, sensitivity, ablation, heatmap, ZTRI
   distribution/concentration, architecture, schema, and resource plot.

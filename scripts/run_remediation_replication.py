@@ -67,7 +67,11 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset-root", type=Path, default=Path("data/generated"))
     parser.add_argument("--config", type=Path, default=Path("configs/default.yaml"))
-    parser.add_argument("--output", type=Path, default=Path("results/remediation_replication.csv"))
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=Path("docs/evidence/remediation_replication.csv"),
+    )
     parser.add_argument("--targets", default="0.50,0.70,0.80,0.90,0.95")
     parser.add_argument(
         "--solvers",

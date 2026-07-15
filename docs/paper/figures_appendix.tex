@@ -32,6 +32,15 @@
   \clearpage
 }
 
+\newcommand{\figsingle}[3]{%
+  \begin{figure}[!ht]
+  \centering
+  \includegraphics[width=0.96\linewidth,height=0.72\textheight,keepaspectratio]{#1}
+  \caption{#2}\label{#3}
+  \end{figure}
+  \clearpage
+}
+
 \begin{document}
 \begin{center}
 {\LARGE\bfseries GraphTrust Publication Figure Set}\par
@@ -46,5 +55,6 @@
 \figpair{figures/09_ablation_results.png}{Ablation study on the pre-specified verification graph.}{fig:ablation}{figures/10_sensitivity_rank_stability.png}{One-at-a-time and 1,000-sample weight sensitivity.}{fig:sensitivity}
 \figpair{figures/11_profile_method_heatmap.png}{Risky-identity recall by enterprise structure.}{fig:heatmap}{figures/12_paired_differences.png}{Paired GraphTrust differences against each baseline.}{fig:paired}
 \figpair{figures/13_attack_surface_atlas.png}{Evidence-backed attack-surface atlas with the highest-ranked route highlighted.}{fig:atlas}{figures/14_ztri_concentration.png}{Concentration of modeled identity risk across enterprise profiles.}{fig:concentration}
-\figpair{figures/15_review_budget_curve.png}{Analyst review-budget curve from the operator audit reanalysis.}{fig:reviewbudget}{figures/12_paired_differences.png}{Paired GraphTrust differences against each baseline.}{fig:paired-repeat}
+\figpair{figures/15_review_budget_curve.png}{Analyst review-budget curve from the operator audit reanalysis.}{fig:reviewbudget}{figures/16_remediation_replication.png}{Replicated remediation outcomes across 15 frozen organizations.}{fig:replicated-remediation}
+\figsingle{figures/17_depth_stratified_recall.png}{Depth-stratified exact-path recall at analysis depth six.}{fig:depth-followup}
 \end{document}

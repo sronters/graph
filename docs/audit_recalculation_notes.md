@@ -13,7 +13,7 @@ claim is explicit rather than silently substituted for the original endpoint.
 
 The corresponding reported review-budget values at K=5 and K=20 are 10.7%
 and 33.7% for GraphTrust recall, versus 0.0% and 1.60% for untyped traversal.
-These supplementary values must be joined to `results/evidence_manifest.csv`
+These supplementary values must be joined to `docs/evidence/evidence_manifest.csv`
 before they are treated as independently reproducible confirmatory results.
 The repository's metric evaluator now emits precision/recall at K=5, 10, 20,
 and 50 and the report builder uses `(profile, seed)` cluster units.

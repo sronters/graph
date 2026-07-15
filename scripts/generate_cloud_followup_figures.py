@@ -116,8 +116,8 @@ def remediation_figure(rows: list[dict[str, str]], output: Path) -> None:
         color="#475569",
         fontsize=8.5,
     )
-    fig.savefig(output / "17_remediation_replication.png", dpi=300, bbox_inches="tight")
-    fig.savefig(output / "17_remediation_replication.svg", bbox_inches="tight")
+    fig.savefig(output / "16_remediation_replication.png", dpi=300, bbox_inches="tight")
+    fig.savefig(output / "16_remediation_replication.svg", bbox_inches="tight")
     plt.close(fig)
 
 
@@ -173,8 +173,8 @@ def depth_figure(rows: list[dict[str, str]], output: Path) -> None:
         color="#475569",
         fontsize=8.5,
     )
-    fig.savefig(output / "18_depth_stratified_recall.png", dpi=300, bbox_inches="tight")
-    fig.savefig(output / "18_depth_stratified_recall.svg", bbox_inches="tight")
+    fig.savefig(output / "17_depth_stratified_recall.png", dpi=300, bbox_inches="tight")
+    fig.savefig(output / "17_depth_stratified_recall.svg", bbox_inches="tight")
     plt.close(fig)
 
 

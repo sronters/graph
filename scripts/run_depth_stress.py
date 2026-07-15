@@ -82,7 +82,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset-root", type=Path, default=Path("data/generated"))
     parser.add_argument("--config", type=Path, default=Path("configs/default.yaml"))
-    parser.add_argument("--output", type=Path, default=Path("results/depth_stress.csv"))
+    parser.add_argument("--output", type=Path, default=Path("docs/evidence/depth_stress.csv"))
     parser.add_argument("--depths", default="1,2,3,4,5,6")
     args = parser.parse_args()
     depths = tuple(int(value) for value in args.depths.split(",") if value.strip())

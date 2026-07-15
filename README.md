@@ -47,7 +47,7 @@ Each immutable run directory contains `manifest.json`, `metrics.json`, `findings
 GitHub Actions run `29387806389` completed depth-stratified detection and
 counterfactual remediation on 15 independent frozen organizations. The strict
 aggregate gate, raw CSVs, hashes, clustered summary, and data-backed SVG figures
-are checked into [`results/cloud/`](results/cloud/). Weighted minimum cut
+are checked into [`docs/evidence/cloud/`](docs/evidence/cloud/). Weighted minimum cut
 reduced modeled exposure by 97.71% on average (cluster-bootstrap 95% CI
 [97.48%, 97.95%]) using 28.13 mean raw IAM changes; all 15 counterfactuals and
 protected workflows verified.
@@ -82,4 +82,4 @@ npm --prefix frontend run build
 
 Use [CITATION.cff](CITATION.cff) and cite the exact dataset manifest and experiment run IDs used in a result. The current evidence status is recorded in the [verification ledger](docs/verification_status.md) and [research brief](docs/research_brief.md).
 
-The short reviewer-facing reproduction path is [README_REPRODUCE_HEADLINE.md](README_REPRODUCE_HEADLINE.md). It defines Precision/Recall@K, cluster bootstrap units, depth stress, and remediation replication without treating prepared Colab notebooks as executed evidence.
+The short reviewer-facing reproduction path is [README_REPRODUCE_HEADLINE.md](README_REPRODUCE_HEADLINE.md). It defines Precision/Recall@K, cluster bootstrap units, depth stress, and remediation replication without treating prepared Colab notebooks as executed evidence. Final PDFs, editable LaTeX, figures, and committed evidence are organized under [`docs/`](docs/).

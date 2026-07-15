@@ -1,11 +1,6 @@
 name: research-evidence-cloud
 
 on:
-  pull_request:
-    branches:
-      - codex/graphtrust-implementation
-    paths:
-      - .github/workflows/research-evidence-cloud.yml
   workflow_dispatch:
 
 permissions:
@@ -17,7 +12,7 @@ concurrency:
 
 jobs:
   replicate:
-    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.sha == '98d2e102565cd10b6cca6ad40fff2ee02ce24a84'
+    if: github.event_name == 'workflow_dispatch'
     name: ${{ matrix.profile }}-${{ matrix.seed }}
     runs-on: ubuntu-latest
     timeout-minutes: 330
@@ -178,7 +173,7 @@ jobs:
           }:
               raise SystemExit(f"Incomplete evidence; refusing publication commit: {counts}")
 
-          output = Path("results/cloud")
+          output = Path("docs/evidence/cloud")
           output.mkdir(parents=True, exist_ok=True)
 
           def combine(files, destination):
@@ -242,6 +237,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: graphtrust-complete-research-evidence
-          path: results/cloud/
+          path: docs/evidence/cloud/
           if-no-files-found: error
           retention-days: 90
