@@ -1,0 +1,23 @@
+{
+  "depth_rows": 1350,
+  "depth_sha256": "a91e9dbf8c16fd27338398f1a0e61e5b7aaa0406979f0c66f70ebb176e61e571",
+  "independent_graphs": 15,
+  "profiles": [
+    "saas_scaleup",
+    "regulated_finance",
+    "global_hybrid"
+  ],
+  "remediation_rows": 300,
+  "remediation_sha256": "6c48a635c55fd6bc2ad8dfce46dd12c2118980af746ff2261b65dd84f634852c",
+  "seeds": [
+    2750159,
+    3681131,
+    4264387,
+    5000011,
+    6500027
+  ],
+  "source_commit": "2bb5a44fa2a8187bbdfc7f90a44631dc0d54ae91",
+  "statistical_unit": "profile_seed",
+  "status": "complete",
+  "workflow_run_id": "29387806389"
+}
