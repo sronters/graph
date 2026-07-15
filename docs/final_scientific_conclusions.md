@@ -7,9 +7,12 @@ matrix: 225 checksum-verified runs spanning three enterprise profiles, five
 held-out seeds, three paired variants, and five methods. Recall and ranking
 estimates use the 30 injected graphs; the 15 clean graphs are negative
 controls. The enterprise graph, not an individual path, is the statistical
-unit. Medium and large runs, when executed, are scalability evidence and must
-not be used to rewrite the small-scale confirmatory result. They were not
-completed in an authenticated high-memory environment for this submission.
+unit. A declared cloud follow-up independently generated 15 injected-mixed
+organizations for depth-stratified detection and replicated remediation.
+GitHub Actions run `29387806389` completed all 15 graph jobs and its aggregate
+gate; the checked-in CSVs and manifest match the immutable workflow artifact.
+Medium and large runs remain pending scalability evidence and are not used to
+rewrite the small-scale confirmatory result.
 
 ## Detection and ranking
 
@@ -39,6 +42,15 @@ was significant (p = 3.37e-13), and the Holm-corrected GraphTrust/untyped
 comparison remained significant. H2 is therefore supported as a ranking
 claim, not a recall claim.
 
+The cloud depth follow-up reinforces this boundary. At analysis depth six,
+GraphTrust exact-path recall was 0.914, 0.600, and 0.333 for planted path
+depths two, three, and four; untyped traversal reached 0.914, 0.600, and
+0.667. Across all planted depths, GraphTrust plateaued at 0.708 after analysis
+depth four, while untyped traversal reached 0.785. Native scope reached 0.185,
+and direct and privileged-only audits remained at zero. Because the frozen
+benchmark contains no one-hop planted risk, the direct-audit zero is
+benchmark-conditional and is not evidence that direct audits never work.
+
 ## False-positive burden
 
 The clean negative controls expose an important limitation. GraphTrust
@@ -53,20 +65,28 @@ and explanation within a large candidate surface.
 
 ## Counterfactual remediation
 
-The verified weighted min-cut plan removed 22 raw IAM relationships at modeled
-cost 18.58. Recompiling the counterfactual graph blocked 20,632 of 20,675
-enumerated paths and reduced modeled exposure by 97.1%, while all protected
-workflows remained reachable. The verifier recorded
-`counterfactual_verified=true`; no live permission was changed.
+The cloud replication evaluated four remediation methods on 15 independent
+`(profile, seed)` organizations at requested exposure-reduction levels of
+50%, 70%, 80%, 90%, and 95%. Weighted minimum cut produced one unique plan per
+organization; the same plan was checked against all five thresholds, so its 75
+CSV rows represent 15 independent plans rather than 75 independent samples.
 
-This does not prove that 22 changes are globally minimal in a real company.
-It is the minimum-cut recommendation under the encoded graph, cost, protected
-edge, and bounded-path assumptions. The alternative plans demonstrate the
-objective trade-off: risk-greedy used 8 changes and cost 6.37 but left 23.0%
-residual exposure; degree-greedy used 76 changes and left 42.7%; the
-constraint-generation plan used 111 changes and left 50.4% under its distinct
-path-count objective. H3 is supported for the min-cut objective on the
-verification instance, not as a universal optimizer ranking.
+Across those 15 plans, weighted minimum cut reduced modeled exposure by a mean
+0.9771 (cluster-bootstrap 95% CI [0.9748, 0.9795]) using a mean 28.13 raw IAM
+changes at modeled cost 22.96 and mean runtime 3.62 seconds. All 15 plans met
+the 95% target, passed post-application graph recompilation, and preserved all
+encoded protected workflows. Profile means were 0.9830 for global hybrid,
+0.9747 for regulated finance, and 0.9736 for SaaS scale-up.
+
+At the 95% request, risk greedy achieved mean reduction 0.8706 at cost 7.55,
+constraint generation achieved 0.8100 at cost 245.31, and degree greedy
+achieved 0.7333 at cost 1430.92. These methods generally did not attain the
+requested weighted target, although every produced plan passed counterfactual
+verification and workflow checks. Constraint generation uses a distinct
+path-count objective, so this is an objective comparison rather than evidence
+of an invalid solver. H3 is supported for the encoded weighted min-cut
+objective across the 15 frozen synthetic organizations; it does not prove
+global minimality or operational safety in a live company.
 
 ## Robustness and validity
 
@@ -88,8 +108,8 @@ Whole-identity graph traversal closes transitive blind spots left by direct
 and privileged-only audit abstractions in SEIB-2026. Untyped traversal finds
 much of that attack surface, but typed GraphTrust semantics make the queue more
 reviewable at a fixed analyst budget and retain hop-level evidence for
-explanation. Counterfactual graph recompilation can verify that a cost-aware
-remediation reduces modeled exposure without breaking encoded workflows.
+explanation. Across 15 frozen organizations, weighted min-cut counterfactuals reduced
+modeled exposure by 97.71% on average while preserving every encoded workflow.
 GraphTrust should therefore complement provider-native IAM tools and human
 review; it is not autonomous enforcement or evidence of real-world breach
 probability.
