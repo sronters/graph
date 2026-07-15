@@ -9,7 +9,8 @@ If the notebook reports `Could not resolve host: github.com`, Internet is off in
 the Kaggle session. Turn on Notebook **Settings → Internet** and restart the
 session. If Internet cannot be enabled, attach a Kaggle Dataset mounted at
 `/kaggle/input/graphtrust-source` containing `GraphTrust_NSRI_Main_Source.zip`
-and a text file `GRAPHTRUST_SOURCE_COMMIT.txt` containing the expected `main`
+(or `GraphTrust_Kaggle_Source.zip`) and a text file
+`GRAPHTRUST_SOURCE_COMMIT.txt` containing the expected `main`
 commit. The notebook has an offline source fallback and records its mode in the
 receipt.
 
