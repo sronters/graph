@@ -13,10 +13,11 @@ permissions:
 
 concurrency:
   group: graphtrust-research-evidence-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   replicate:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.sha == '98d2e102565cd10b6cca6ad40fff2ee02ce24a84'
     name: ${{ matrix.profile }}-${{ matrix.seed }}
     runs-on: ubuntu-latest
     timeout-minutes: 330
@@ -138,7 +139,7 @@ jobs:
   aggregate:
     name: verify-and-commit-complete-evidence
     needs: replicate
-    if: always()
+    if: always() && (github.event_name == 'workflow_dispatch' || github.event.pull_request.head.sha == '98d2e102565cd10b6cca6ad40fff2ee02ce24a84')
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
