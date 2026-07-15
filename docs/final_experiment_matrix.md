@@ -52,9 +52,11 @@ Every plan reports raw IAM changes, modeled cost, departments affected,
 enumerated paths blocked, residual weighted exposure, solver status, and search
 truncation. A plan is publication-verified only after the proposed raw edges are
 removed, effective capabilities are recompiled, analysis is rerun, and all
-capability-specific protected workflows remain reachable. The current checked
-in evidence remains the registered single-instance verification; the 15-graph
-replication is a required run, not a silently inferred result.
+capability-specific protected workflows remain reachable. GitHub Actions run `29387806389` completed the full 15-graph replication
+and the strict aggregate gate. Weighted minimum cut produced 15 unique graph
+plans; the same plan is repeated across five threshold checks and is therefore
+analyzed with n=15, not n=75. The immutable CSVs, manifest, hashes, clustered
+summary, and data-backed SVG figures are checked into `results/cloud/`.
 
 ## Large-profile launches
 
@@ -111,8 +113,9 @@ python scripts/build_final_results.py \
 | Run manifests and checksum verification | **Pass** |
 | Exactly 225 verified medium runs | **Pending; not claimed** |
 | Three authenticated Colab receipts | **Pending; not claimed** |
-| Counterfactual remediation after edge application | **Pass on the registered verification instance** |
-| Paper/tables/figures regenerated only from verified artifacts | **Pass for the small matrix and remediation instance** |
+| Counterfactual remediation after edge application | **Pass: 15/15 independent organizations** |
+| Cloud depth/remediation aggregate gate | **Pass: 1,350 + 300 data rows** |
+| Paper/tables/figures regenerated only from verified artifacts | **Pass for completed small and cloud evidence** |
 
 The paper's inferential conclusions therefore use only the complete small
 matrix. Future medium and large receipts may add scalability evidence but may
