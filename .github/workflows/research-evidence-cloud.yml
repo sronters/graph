@@ -1,0 +1,256 @@
+name: research-evidence-cloud
+
+on:
+  push:
+    branches:
+      - agent/graphtrust-winning-evidence
+    paths:
+      - .github/workflows/research-evidence-cloud.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: graphtrust-research-evidence-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  replicate:
+    name: ${{ matrix.profile }}-${{ matrix.seed }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    strategy:
+      fail-fast: false
+      max-parallel: 15
+      matrix:
+        include:
+          - profile: saas_scaleup
+            seed: 2750159
+          - profile: saas_scaleup
+            seed: 3681131
+          - profile: saas_scaleup
+            seed: 4264387
+          - profile: saas_scaleup
+            seed: 5000011
+          - profile: saas_scaleup
+            seed: 6500027
+          - profile: regulated_finance
+            seed: 2750159
+          - profile: regulated_finance
+            seed: 3681131
+          - profile: regulated_finance
+            seed: 4264387
+          - profile: regulated_finance
+            seed: 5000011
+          - profile: regulated_finance
+            seed: 6500027
+          - profile: global_hybrid
+            seed: 2750159
+          - profile: global_hybrid
+            seed: 3681131
+          - profile: global_hybrid
+            seed: 4264387
+          - profile: global_hybrid
+            seed: 5000011
+          - profile: global_hybrid
+            seed: 6500027
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.8.15"
+          enable-cache: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install frozen research environment
+        run: uv sync --frozen --all-extras
+
+      - name: Generate one frozen paired organization
+        run: |
+          uv run graphtrust generate \
+            --profile "${{ matrix.profile }}" \
+            --scale small \
+            --seed "${{ matrix.seed }}" \
+            --variants clean,injected_low,injected_mixed,remediated_truth
+
+      - name: Validate injected benchmark
+        run: |
+          uv run graphtrust validate-data \
+            --dataset "data/generated/${{ matrix.profile }}/small/${{ matrix.seed }}/injected_mixed" \
+            --json
+
+      - name: Run depth-stratified detection
+        run: |
+          uv run python scripts/run_depth_stress.py \
+            --dataset-root data/generated \
+            --depths 1,2,3,4,5,6 \
+            --output "cloud-results/depth_${{ matrix.profile }}_${{ matrix.seed }}.csv"
+
+      - name: Run replicated counterfactual remediation
+        run: |
+          uv run python scripts/run_remediation_replication.py \
+            --dataset-root data/generated \
+            --targets 0.50,0.70,0.80,0.90,0.95 \
+            --solvers degree_greedy,risk_greedy,min_cut,constraint_generation \
+            --output "cloud-results/remediation_${{ matrix.profile }}_${{ matrix.seed }}.csv"
+
+      - name: Record immutable receipt
+        if: always()
+        run: |
+          mkdir -p cloud-results
+          python - <<'PY'
+          import json
+          import os
+          import platform
+          from pathlib import Path
+
+          payload = {
+              "repository": os.environ["GITHUB_REPOSITORY"],
+              "commit": os.environ["GITHUB_SHA"],
+              "run_id": os.environ["GITHUB_RUN_ID"],
+              "run_attempt": os.environ["GITHUB_RUN_ATTEMPT"],
+              "profile": "${{ matrix.profile }}",
+              "seed": int("${{ matrix.seed }}"),
+              "runner_os": os.environ["RUNNER_OS"],
+              "python": platform.python_version(),
+          }
+          destination = Path(
+              "cloud-results/receipt_${{ matrix.profile }}_${{ matrix.seed }}.json"
+          )
+          destination.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+          PY
+
+      - name: Upload graph evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidence-${{ matrix.profile }}-${{ matrix.seed }}
+          path: cloud-results/
+          if-no-files-found: error
+          retention-days: 30
+
+  aggregate:
+    name: verify-and-commit-complete-evidence
+    needs: replicate
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all evidence shards
+        uses: actions/download-artifact@v4
+        with:
+          pattern: evidence-*
+          path: downloaded-evidence
+          merge-multiple: true
+
+      - name: Require all 15 depth and remediation shards
+        run: |
+          python - <<'PY'
+          import csv
+          import hashlib
+          import json
+          from pathlib import Path
+
+          root = Path("downloaded-evidence")
+          depth_files = sorted(root.glob("depth_*.csv"))
+          remediation_files = sorted(root.glob("remediation_*.csv"))
+          receipt_files = sorted(root.glob("receipt_*.json"))
+
+          counts = {
+              "depth_shards": len(depth_files),
+              "remediation_shards": len(remediation_files),
+              "receipts": len(receipt_files),
+          }
+          if counts != {
+              "depth_shards": 15,
+              "remediation_shards": 15,
+              "receipts": 15,
+          }:
+              raise SystemExit(f"Incomplete evidence; refusing publication commit: {counts}")
+
+          output = Path("results/cloud")
+          output.mkdir(parents=True, exist_ok=True)
+
+          def combine(files, destination):
+              header = None
+              rows = []
+              for path in files:
+                  with path.open(newline="", encoding="utf-8") as stream:
+                      reader = csv.DictReader(stream)
+                      if header is None:
+                          header = reader.fieldnames
+                      elif reader.fieldnames != header:
+                          raise SystemExit(f"CSV schema mismatch: {path}")
+                      rows.extend(reader)
+              if not header or not rows:
+                  raise SystemExit(f"No evidence rows for {destination}")
+              with destination.open("w", newline="", encoding="utf-8") as stream:
+                  writer = csv.DictWriter(stream, fieldnames=header)
+                  writer.writeheader()
+                  writer.writerows(rows)
+              return len(rows)
+
+          depth_path = output / "depth_stress_15_graphs.csv"
+          remediation_path = output / "remediation_replication_15_graphs.csv"
+          depth_rows = combine(depth_files, depth_path)
+          remediation_rows = combine(remediation_files, remediation_path)
+
+          expected_remediation_rows = 15 * 5 * 4
+          if remediation_rows != expected_remediation_rows:
+              raise SystemExit(
+                  "Unexpected remediation plan count: "
+                  f"{remediation_rows} != {expected_remediation_rows}"
+              )
+
+          def sha256(path):
+              return hashlib.sha256(path.read_bytes()).hexdigest()
+
+          manifest = {
+              "status": "complete",
+              "statistical_unit": "profile_seed",
+              "independent_graphs": 15,
+              "profiles": [
+                  "saas_scaleup",
+                  "regulated_finance",
+                  "global_hybrid",
+              ],
+              "seeds": [2750159, 3681131, 4264387, 5000011, 6500027],
+              "depth_rows": depth_rows,
+              "remediation_rows": remediation_rows,
+              "depth_sha256": sha256(depth_path),
+              "remediation_sha256": sha256(remediation_path),
+              "source_commit": "${{ github.sha }}",
+              "workflow_run_id": "${{ github.run_id }}",
+          }
+          (output / "evidence_manifest.json").write_text(
+              json.dumps(manifest, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Commit complete verified evidence
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add results/cloud/depth_stress_15_graphs.csv
+          git add results/cloud/remediation_replication_15_graphs.csv
+          git add results/cloud/evidence_manifest.json
+          git commit -m "Add replicated cloud research evidence"
+          git push
+
+      - name: Upload aggregated evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: graphtrust-complete-research-evidence
+          path: results/cloud/
+          if-no-files-found: error
+          retention-days: 90
