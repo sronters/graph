@@ -1,6 +1,6 @@
 # Verification status
 
-This ledger records the evidence available on 2026-07-14. It deliberately
+This ledger records the evidence available on 2026-07-15. It deliberately
 separates completed experiments from prepared execution paths. Generated data
 and run artifacts are reproducible from committed configuration files and are
 accepted by the report only after checksum validation.
@@ -26,22 +26,36 @@ stored separately and excluded from the final-matrix input.
 
 ## Counterfactual remediation evidence
 
-The registered injected-mixed verification instance was analyzed with four
-remediation approaches. Weighted min-cut proposed 22 raw IAM relationship
-changes at modeled cost 18.583579. After applying those changes, recompiling
-the effective graph, and rerunning bounded reachability, the verifier recorded:
+GitHub Actions run `29387806389` completed 15 independent injected-mixed
+organizations spanning three profiles and five held-out seeds. The aggregate
+artifact passed a strict 15/15 shard gate and contains 300 remediation rows
+(four solvers × five requested targets × 15 organizations) plus 1,350
+depth-stress rows. The checked-in files match these manifest hashes:
 
-| Check | Result |
+| Artifact | SHA-256 |
+|---|---|
+| Depth stress CSV | `a91e9dbf8c16fd27338398f1a0e61e5b7aaa0406979f0c66f70ebb176e61e571` |
+| Remediation CSV | `6c48a635c55fd6bc2ad8dfce46dd12c2118980af746ff2261b65dd84f634852c` |
+
+Weighted minimum cut produced 15 unique graph plans. Repeating each plan
+against five target thresholds yields 75 CSV checks but does not increase the
+independent sample size beyond 15.
+
+| Replicated weighted min-cut check | Result |
 |---|---:|
-| Enumerated paths before remediation | 20,675 |
-| Enumerated paths blocked | 20,632 |
-| Relative exposure reduction | **97.141%** |
-| Protected workflows preserved | **true** |
-| `counterfactual_verified` | **true** |
+| Independent organizations | **15** |
+| Mean exposure reduction | **97.71%** |
+| Cluster-bootstrap 95% CI | **[97.48%, 97.95%]** |
+| Mean raw IAM changes | **28.13** |
+| Mean modeled cost | **22.96** |
+| Mean runtime | **3.62 s** |
+| 95% target attained | **15/15** |
+| Protected workflows preserved | **15/15** |
+| Counterfactual verified | **15/15** |
 
-This verifies the recommendation under the encoded graph, cost, protected-edge,
-workflow, and bounded-search assumptions. It does not modify a live IAM system
-and does not establish global minimality for a real organization.
+These are recommendation-only results under synthetic graph, cost, protected
+workflow, and bounded-search assumptions. No live IAM permission was changed,
+and the experiment does not establish real-world global minimality.
 
 ## Robustness and publication artifacts
 
@@ -49,7 +63,7 @@ and does not establish global minimality for a real organization.
   Spearman rank correlation 0.9969 and minimum 0.928.
 - Final report inputs: checksum-validated result JSON/CSV and generated LaTeX
   macros.
-- Figures: 16 publication figures in SVG and 300-dpi PNG; the paper includes a
+- Figures: 18 publication figures in SVG and 300-dpi PNG; the paper includes a
   graph attack-surface atlas, explainable path, paired effect plot, ranking and
   recall charts, remediation frontier, sensitivity, ablation, heatmap, ZTRI
   distribution/concentration, architecture, schema, and resource plot.
@@ -97,7 +111,8 @@ The final gate completed with these results:
 
 ## Defensible submission status
 
-The small-scale confirmatory study, statistical analysis, counterfactual
-remediation verification, figures, and paper are complete. Medium/large
-scalability results and Docker startup remain explicitly pending. They must not
-be described as executed until authenticated receipts or CI logs exist.
+The small-scale confirmatory study, clustered statistical analysis, 15-graph
+counterfactual remediation replication, depth follow-up, figures, and paper
+inputs are complete. Docker startup is verified by public CI. The 225-run
+medium scalability extension and three authenticated large Colab receipts
+remain pending and must not be described as executed.
