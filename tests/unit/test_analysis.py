@@ -15,7 +15,7 @@ from graphtrust.analysis.path_risk import (
 )
 from graphtrust.analysis.paths import top_k_loopless_paths
 from graphtrust.analysis.reachability import summarize_critical_reachability
-from graphtrust.analysis.runner import AnalysisLimits, run_analysis_methods
+from graphtrust.analysis.runner import AnalysisLimits, _stable_bounded_ids, run_analysis_methods
 from graphtrust.graph.networkx_backend import NetworkXBackend
 from graphtrust.schemas.conditions import ConditionState
 from graphtrust.schemas.findings import AnalysisMethod
@@ -85,6 +85,14 @@ def edge(
         semantic_rule_id=rule,
         source_provider="GENERIC",
     )
+
+
+def test_stable_bounded_ids_are_order_independent() -> None:
+    values = ("identity:c", "identity:a", "identity:d", "identity:b")
+    selected = _stable_bounded_ids(values, 2)
+    assert selected == _stable_bounded_ids(tuple(reversed(values)), 2)
+    assert len(selected) == 2
+    assert _stable_bounded_ids(values, None) == values
 
 
 def analysis_fixture() -> tuple[tuple[GraphNode, ...], tuple[EffectiveCapabilityEdge, ...]]:

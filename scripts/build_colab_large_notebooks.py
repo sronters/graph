@@ -1,6 +1,6 @@
-"""Generate three profile-specific, restart-safe Google Colab notebooks."""
+"""Generate profile-specific, restart-safe Google Colab notebooks."""
 
-# ruff: noqa: E501 - long strings are intentionally emitted as readable notebook cells.
+# ruff: noqa: E501 - notebook cells are kept readable in generated JSON.
 
 from __future__ import annotations
 
@@ -39,93 +39,103 @@ def notebook(profile: str, label: str) -> dict[str, object]:
         },
         "cells": [
             markdown(
-                f"# GraphTrust large run: {label}\n\n"
-                "This CPU/high-RAM run generates and analyzes one 227,000-node, "
-                "2.5-million-edge SEIB-2026 enterprise graph. It writes an immutable "
-                "run directory and a receipt that records whether execution occurred in Colab.\n"
+                f"# GraphTrust verified large run: {label}\n\n"
+                "Run every cell from top to bottom in a **CPU high-RAM** Colab runtime. "
+                "The notebook persists the generated graph and immutable run under Google Drive, "
+                "so reconnecting and running again resumes instead of discarding verified work. "
+                "The frozen source/target budgets in `configs/large.yaml` make this a bounded "
+                "scalability run, not an exhaustive-recall experiment.\n"
             ),
+            markdown("## 0. Settings and persistent workspace"),
             code(
+                "import hashlib\n"
+                "import json\n"
                 "import os\n"
                 "import platform\n"
                 "import shutil\n"
                 "import subprocess\n"
                 "import sys\n"
                 "from pathlib import Path\n\n"
+                "from google.colab import drive, files\n\n"
                 f"PROFILE = {profile!r}\n"
                 "SEED = 2750159\n"
                 "REPO = 'https://github.com/sronters/graph.git'\n"
+                "BRANCH = 'main'  # PR #2 must be merged before this run.\n"
                 "ROOT = Path('/content/graphtrust')\n"
-                "print({\n"
-                "    'profile': PROFILE,\n"
-                "    'colab_release': os.getenv('COLAB_RELEASE_TAG'),\n"
-                "    'python': sys.version,\n"
-                "    'platform': platform.platform(),\n"
-                "    'cpus': os.cpu_count(),\n"
-                "})\n"
+                "drive.mount('/content/drive')\n"
+                "PERSIST = Path('/content/drive/MyDrive/GraphTrustLarge') / PROFILE / str(SEED)\n"
+                "DATA_ROOT = PERSIST / 'data'\n"
+                "OUTPUT_ROOT = PERSIST / 'artifacts'\n"
+                "PERSIST.mkdir(parents=True, exist_ok=True)\n"
+                "print({'profile': PROFILE, 'seed': SEED, 'persistent_workspace': str(PERSIST)})\n"
             ),
-            markdown("## 1. Locked environment and provenance"),
+            markdown("## 1. Clone the final source and install the locked environment"),
             code(
-                "if not (ROOT / 'pyproject.toml').exists():\n"
-                "    subprocess.run(['git', 'clone', '--depth', '1', REPO, str(ROOT)], check=True)\n"
+                "if not (ROOT / '.git').exists():\n"
+                "    subprocess.run(['git', 'clone', '--depth', '1', '--branch', BRANCH, REPO, str(ROOT)], check=True)\n"
                 "os.chdir(ROOT)\n"
+                "subprocess.run(['git', 'fetch', '--depth', '1', 'origin', BRANCH], check=True)\n"
+                "subprocess.run(['git', 'checkout', '--detach', f'origin/{BRANCH}'], check=True)\n"
                 "subprocess.run([sys.executable, '-m', 'pip', 'install', '-q', 'uv'], check=True)\n"
                 "subprocess.run(['uv', 'sync', '--frozen', '--all-extras'], check=True)\n"
-                "commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()\n"
-                "print({'git_commit': commit})\n"
+                "COMMIT = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()\n"
+                "print({'git_commit': COMMIT, 'python': sys.version, 'platform': platform.platform()})\n"
             ),
-            markdown("## 2. Capacity gate and large deterministic generation"),
+            markdown("## 2. Fail-fast capacity gate and smoke test"),
             code(
                 "import psutil\n\n"
-                "available_gib = psutil.virtual_memory().available / 2**30\n"
-                "assert available_gib >= 10, (\n"
-                "    'Use a Colab high-RAM runtime; only '\n"
-                "    f'{available_gib:.1f} GiB available'\n"
-                ")\n"
-                "dataset = ROOT / 'data/generated' / PROFILE / 'large' / str(SEED) / 'injected_mixed'\n"
+                "available_ram_gib = psutil.virtual_memory().available / 2**30\n"
+                "drive_free_gib = shutil.disk_usage(PERSIST).free / 2**30\n"
+                "assert os.getenv('COLAB_RELEASE_TAG'), 'This must run inside Google Colab.'\n"
+                "assert available_ram_gib >= 20, f'Choose a high-RAM runtime; only {available_ram_gib:.1f} GiB is available.'\n"
+                "assert drive_free_gib >= 15, f'Free at least 15 GiB in Google Drive; only {drive_free_gib:.1f} GiB is available.'\n"
+                "subprocess.run(['uv', 'run', 'graphtrust', 'generate', '--profile', PROFILE, '--scale', 'large', '--seed', str(SEED), '--variants', 'injected_mixed', '--dry-run'], check=True)\n"
+                "subprocess.run(['uv', 'run', 'pytest', '-q', 'tests/integration/test_experiment_runner.py'], check=True)\n"
+                "print({'available_ram_gib': round(available_ram_gib, 1), 'drive_free_gib': round(drive_free_gib, 1), 'smoke_test': 'passed'})\n"
+            ),
+            markdown("## 3. Generate or reuse the deterministic 2.5-million-edge graph"),
+            code(
+                "dataset = DATA_ROOT / PROFILE / 'large' / str(SEED) / 'injected_mixed'\n"
                 "if not (dataset / 'checksums.sha256').exists():\n"
-                "    subprocess.run(\n"
-                "        [\n"
-                "            'uv', 'run', 'graphtrust', 'generate',\n"
-                "            '--profile', PROFILE, '--scale', 'large',\n"
-                "            '--seed', str(SEED), '--variants', 'injected_mixed',\n"
-                "        ],\n"
-                "        check=True,\n"
-                "    )\n"
-                "print(dataset)\n"
+                "    subprocess.run(['uv', 'run', 'graphtrust', 'generate', '--profile', PROFILE, '--scale', 'large', '--seed', str(SEED), '--variants', 'injected_mixed', '--output-root', str(DATA_ROOT)], check=True)\n"
+                "subprocess.run(['uv', 'run', 'graphtrust', 'validate-data', '--dataset', str(dataset)], check=True)\n"
+                "print({'dataset': str(dataset), 'status': 'checksum-verified'})\n"
             ),
-            markdown("## 3. Immutable large GraphTrust run"),
+            markdown("## 4. Run or resume the immutable bounded analysis"),
             code(
-                "subprocess.run(\n"
-                "    [\n"
-                "        'uv', 'run', 'python', 'scripts/run_large_profiles.py',\n"
-                "        '--profile', PROFILE, '--seed', str(SEED),\n"
-                "        '--config', 'configs/large.yaml',\n"
-                "        '--output', 'artifacts/large_runs',\n"
-                "    ],\n"
-                "    check=True,\n"
-                ")\n"
-                "receipt = Path('artifacts/large_runs/large_run_receipt.json')\n"
-                "print(receipt.read_text())\n"
-            ),
-            markdown("## 4. Verify checksums and export the complete evidence package"),
-            code(
-                "import json\n\n"
-                "from google.colab import files\n\n"
-                "receipt_data = json.loads(Path('artifacts/large_runs/large_run_receipt.json').read_text())\n"
-                "assert receipt_data['is_google_colab'], (\n"
-                "    'Receipt is not from a Google Colab runtime'\n"
-                ")\n"
+                "subprocess.run(['uv', 'run', 'python', 'scripts/run_large_profiles.py', '--profile', PROFILE, '--seed', str(SEED), '--data-root', str(DATA_ROOT), '--config', 'configs/large.yaml', '--output', str(OUTPUT_ROOT)], check=True)\n"
+                "receipt = OUTPUT_ROOT / 'large_run_receipt.json'\n"
+                "receipt_data = json.loads(receipt.read_text())\n"
+                "assert receipt_data['is_google_colab']\n"
+                "assert len(receipt_data['profiles']) == 1\n"
                 "assert all(item['verified'] for item in receipt_data['profiles'])\n"
-                "archive = shutil.make_archive(\n"
-                "    f'/content/graphtrust-large-{PROFILE}-{SEED}',\n"
-                "    'zip',\n"
-                "    'artifacts/large_runs',\n"
-                ")\n"
-                "print({\n"
-                "    'archive': archive,\n"
-                "    'verified_profiles': len(receipt_data['profiles']),\n"
-                "})\n"
-                "files.download(archive)\n"
+                "print(json.dumps(receipt_data, indent=2))\n"
+            ),
+            markdown("## 5. Build and download the verified evidence ZIP"),
+            code(
+                "export_root = PERSIST / 'export'\n"
+                "export_root.mkdir(parents=True, exist_ok=True)\n"
+                "shutil.copy2(dataset / 'dataset_manifest.json', export_root / 'dataset_manifest.json')\n"
+                "shutil.copy2(dataset / 'checksums.sha256', export_root / 'dataset_checksums.sha256')\n"
+                "shutil.copy2(OUTPUT_ROOT / 'large_run_receipt.json', export_root / 'large_run_receipt.json')\n"
+                "archive_base = PERSIST / f'GraphTrust_large_{PROFILE}_{SEED}'\n"
+                "archive = Path(shutil.make_archive(str(archive_base), 'zip', PERSIST, 'artifacts'))\n"
+                "archive_digest = hashlib.sha256()\n"
+                "with archive.open('rb') as stream:\n"
+                "    for chunk in iter(lambda: stream.read(1024 * 1024), b''):\n"
+                "        archive_digest.update(chunk)\n"
+                "archive_sha256 = archive_digest.hexdigest()\n"
+                "download_receipt = {'archive': archive.name, 'archive_sha256': archive_sha256, 'git_commit': COMMIT, 'profile': PROFILE, 'seed': SEED}\n"
+                "(export_root / 'download_receipt.json').write_text(json.dumps(download_receipt, indent=2, sort_keys=True) + '\\n')\n"
+                "print(download_receipt)\n"
+                "files.download(str(archive))\n"
+                "files.download(str(export_root / 'download_receipt.json'))\n"
+            ),
+            markdown(
+                "## What to send back\n\n"
+                "Send the downloaded `GraphTrust_large_<profile>_<seed>.zip` and "
+                "`download_receipt.json`. Do not report runtime or memory numbers unless "
+                "the receipt says `is_google_colab: true` and every profile says `verified: true`."
             ),
         ],
     }

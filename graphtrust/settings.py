@@ -17,6 +17,9 @@ class AnalysisSettings(BaseModel):
     top_k_per_source_target: int = Field(default=20, ge=1)
     top_k_per_source: int = Field(default=100, ge=1)
     global_path_cap: int = Field(default=250_000, ge=1)
+    per_source_target_expansion_cap: int = Field(default=50_000, ge=1)
+    maximum_sources: int | None = Field(default=None, ge=1)
+    maximum_targets: int | None = Field(default=None, ge=1)
     criticality_threshold: float = Field(default=0.70, ge=0, le=1)
     include_dormant: bool = False
     include_disabled: bool = False

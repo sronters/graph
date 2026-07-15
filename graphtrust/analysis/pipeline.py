@@ -38,6 +38,9 @@ def analyze_bundle(
         top_k_per_source_target=config.analysis.top_k_per_source_target,
         top_k_per_source=config.analysis.top_k_per_source,
         global_path_cap=config.analysis.global_path_cap,
+        per_source_target_expansion_cap=config.analysis.per_source_target_expansion_cap,
+        maximum_sources=config.analysis.maximum_sources,
+        maximum_targets=config.analysis.maximum_targets,
     )
     results = run_analysis_methods(
         records.nodes,

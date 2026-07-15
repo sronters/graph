@@ -52,7 +52,10 @@ reduced modeled exposure by 97.71% on average (cluster-bootstrap 95% CI
 [97.48%, 97.95%]) using 28.13 mean raw IAM changes; all 15 counterfactuals and
 protected workflows verified.
 
-For hosted execution, open [GraphTrust_Colab.ipynb](notebooks/GraphTrust_Colab.ipynb) in Google Colab, enable the high-RAM runtime for large graphs, set `REPO_URL`, then run cells in order. Large profile runs are intentionally explicit and checkpointed; this repository does not treat an unexecuted notebook as empirical evidence.
+For hosted execution, follow the [large-run Colab runbook](docs/COLAB_RUNBOOK.md).
+The three profile notebooks use a CPU high-RAM runtime, persist checkpoints to
+Google Drive, run a fail-fast integration test, and export checksum-verifiable
+receipts. An unexecuted notebook is never treated as empirical evidence.
 
 ## API and dashboard
 

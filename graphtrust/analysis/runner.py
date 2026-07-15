@@ -76,6 +76,17 @@ class AnalysisLimits:
     top_k_per_source: int = 100
     global_path_cap: int = 250_000
     per_source_target_expansion_cap: int = 50_000
+    maximum_sources: int | None = None
+    maximum_targets: int | None = None
+
+
+def _stable_bounded_ids(values: tuple[str, ...], limit: int | None) -> tuple[str, ...]:
+    """Select a reproducible, order-independent subset for bounded scale runs."""
+    if limit is None or len(values) <= limit:
+        return values
+    return tuple(
+        sorted(values, key=lambda value: (hashlib.sha256(value.encode()).digest(), value))[:limit]
+    )
 
 
 def _backend(
@@ -188,6 +199,11 @@ def _run_method(
     backend = _backend(backend_name, nodes, selected_edges)
     node_by_id = {node.node_id: node for node in nodes}
     candidates = _candidate_sources(method, nodes)
+    candidate_ids_for_run = _stable_bounded_ids(
+        tuple(node.node_id for node in candidates), limits.maximum_sources
+    )
+    candidates = tuple(node_by_id[node_id] for node_id in candidate_ids_for_run)
+    critical_asset_ids = _stable_bounded_ids(critical_asset_ids, limits.maximum_targets)
     candidate_ids = {node.node_id for node in candidates}
     reverse = backend.reverse_reachable(
         critical_asset_ids,
@@ -200,6 +216,14 @@ def _run_method(
     candidate_paths = 0
     search_complete = True
     warnings = [METHOD_LIMITATIONS[method]]
+    if limits.maximum_sources is not None:
+        warnings.append(
+            f"Deterministic scalability budget: at most {limits.maximum_sources} sources."
+        )
+    if limits.maximum_targets is not None:
+        warnings.append(
+            f"Deterministic scalability budget: at most {limits.maximum_targets} targets."
+        )
     depth = 1 if method is AnalysisMethod.DIRECT else limits.maximum_depth
     weight_mode: WeightMode = "untyped" if method is AnalysisMethod.UNTYPED else "typed"
 

@@ -6,10 +6,14 @@ import argparse
 import json
 import os
 import platform
+import shutil
+import subprocess
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 
 from graphtrust.data import read_dataset
+from graphtrust.data.checksums import sha256_file
 from graphtrust.experiments.registry import ExperimentUnit
 from graphtrust.experiments.runner import run_experiment_unit, verify_run_directory
 from graphtrust.schemas.findings import AnalysisMethod
@@ -30,8 +34,11 @@ def main() -> None:
 
     profiles = PROFILES if arguments.profile == "all" else (arguments.profile,)
     config = load_project_config(arguments.config)
+    run_started = datetime.now(UTC)
+    overall_clock = time.perf_counter()
     receipts: list[dict[str, object]] = []
     for profile in profiles:
+        profile_clock = time.perf_counter()
         dataset = (
             arguments.data_root
             / profile
@@ -62,20 +69,35 @@ def main() -> None:
                 "status": outcome.status,
                 "verified": valid,
                 "verification_failures": failures,
+                "elapsed_seconds": round(time.perf_counter() - profile_clock, 6),
             }
         )
 
     arguments.output.mkdir(parents=True, exist_ok=True)
+    git_result = subprocess.run(
+        ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=False
+    )
     receipt = {
         "created_at": datetime.now(UTC).isoformat(),
+        "started_at": run_started.isoformat(),
+        "elapsed_seconds": round(time.perf_counter() - overall_clock, 6),
         "is_google_colab": "COLAB_RELEASE_TAG" in os.environ,
         "colab_release_tag": os.getenv("COLAB_RELEASE_TAG"),
+        "git_commit": git_result.stdout.strip() if git_result.returncode == 0 else "unknown",
+        "config_path": str(arguments.config),
+        "config_sha256": sha256_file(arguments.config),
+        "data_root": str(arguments.data_root),
+        "output_root": str(arguments.output),
         "python": platform.python_version(),
         "platform": platform.platform(),
+        "cpu_count": os.cpu_count(),
+        "disk_free_gib": round(shutil.disk_usage(arguments.output).free / 2**30, 3),
         "profiles": receipts,
     }
     path = arguments.output / "large_run_receipt.json"
-    path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    temporary = path.with_suffix(".json.tmp")
+    temporary.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    os.replace(temporary, path)
     print(path)
 
 

@@ -14,6 +14,13 @@ def test_default_configuration_matches_declared_contract() -> None:
     assert config.condition_mode == "conservative"
 
 
+def test_large_configuration_declares_bounded_scalability_budget() -> None:
+    config = load_project_config(Path("configs/large.yaml"))
+    assert config.analysis.maximum_sources == 30
+    assert config.analysis.maximum_targets == 50
+    assert config.analysis.per_source_target_expansion_cap == 5_000
+
+
 def test_non_mapping_yaml_is_rejected(tmp_path: Path) -> None:
     path = tmp_path / "invalid.yaml"
     path.write_text("- not\n- a\n- mapping\n", encoding="utf-8")

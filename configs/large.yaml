@@ -2,10 +2,15 @@ schema_version: "1.0"
 backend: igraph
 condition_mode: conservative
 analysis:
-  maximum_depth: 8
-  top_k_per_source_target: 5
-  top_k_per_source: 10
-  global_path_cap: 10000
+  # Complete generation/compilation with a deterministic bounded search.
+  # This is scalability evidence, not an exhaustive-recall experiment.
+  maximum_depth: 6
+  top_k_per_source_target: 1
+  top_k_per_source: 5
+  global_path_cap: 150
+  per_source_target_expansion_cap: 5000
+  maximum_sources: 30
+  maximum_targets: 50
   criticality_threshold: 0.70
   include_dormant: false
   include_disabled: false
