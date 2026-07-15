@@ -8,7 +8,6 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-
 COLORS = {
     "min_cut": "#16a34a",
     "risk_greedy": "#0284c7",
@@ -64,16 +63,9 @@ def remediation_figure(rows: list[dict[str, str]], output: Path) -> None:
         np.mean([float(row["achieved_exposure_reduction"]) for row in grouped[key]])
         for key in order
     ]
-    costs = [
-        np.mean([float(row["modeled_cost"]) for row in grouped[key]]) for key in order
-    ]
-    changes = [
-        np.mean([float(row["changes"]) for row in grouped[key]]) for key in order
-    ]
-    runtimes = [
-        np.mean([float(row["runtime_seconds"]) for row in grouped[key]])
-        for key in order
-    ]
+    costs = [np.mean([float(row["modeled_cost"]) for row in grouped[key]]) for key in order]
+    changes = [np.mean([float(row["changes"]) for row in grouped[key]]) for key in order]
+    runtimes = [np.mean([float(row["runtime_seconds"]) for row in grouped[key]]) for key in order]
 
     fig, ax = plt.subplots(figsize=(10.6, 6.3))
     fig.subplots_adjust(left=0.10, right=0.98, top=0.88, bottom=0.22)
@@ -118,7 +110,8 @@ def remediation_figure(rows: list[dict[str, str]], output: Path) -> None:
     fig.text(
         0.5,
         0.035,
-        "All counterfactuals and workflows verified; requested-target attainment is reported separately.",
+        "All counterfactuals and workflows verified; requested-target "
+        "attainment is reported separately.",
         ha="center",
         color="#475569",
         fontsize=8.5,
@@ -134,11 +127,7 @@ def depth_figure(rows: list[dict[str, str]], output: Path) -> None:
         "untyped": "Untyped",
         "native_scope": "Native scope",
     }
-    selected = [
-        row
-        for row in rows
-        if int(row["analysis_depth"]) == 6 and row["method"] in labels
-    ]
+    selected = [row for row in rows if int(row["analysis_depth"]) == 6 and row["method"] in labels]
     grouped: dict[tuple[str, int], list[float]] = defaultdict(list)
     for row in selected:
         grouped[(row["method"], int(row["path_depth"]))].append(float(row["recall"]))
@@ -178,7 +167,8 @@ def depth_figure(rows: list[dict[str, str]], output: Path) -> None:
     fig.text(
         0.5,
         0.03,
-        "n = 15 independent organizations. Direct and privileged-only recall = 0; no depth-1 planted risk exists.",
+        "n = 15 independent organizations. Direct and privileged-only recall = 0; "
+        "no depth-1 planted risk exists.",
         ha="center",
         color="#475569",
         fontsize=8.5,
