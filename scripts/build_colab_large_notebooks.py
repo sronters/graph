@@ -115,7 +115,7 @@ def notebook(profile: str, label: str) -> dict[str, object]:
             code(
                 "export_root = PERSIST / 'export'\n"
                 "export_root.mkdir(parents=True, exist_ok=True)\n"
-                "shutil.copy2(dataset / 'dataset_manifest.json', export_root / 'dataset_manifest.json')\n"
+                "shutil.copy2(dataset / 'manifest.json', export_root / 'dataset_manifest.json')\n"
                 "shutil.copy2(dataset / 'checksums.sha256', export_root / 'dataset_checksums.sha256')\n"
                 "shutil.copy2(OUTPUT_ROOT / 'large_run_receipt.json', export_root / 'large_run_receipt.json')\n"
                 "archive_base = PERSIST / f'GraphTrust_large_{PROFILE}_{SEED}'\n"
