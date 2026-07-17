@@ -339,6 +339,37 @@ def test_nested_groups_derive_role_with_full_provenance_and_report_cycle() -> No
     assert result.warnings
 
 
+def test_deeply_nested_groups_do_not_exceed_recursion_limit() -> None:
+    """Regression test for the RecursionError observed on the large-scale
+    profile, where a NESTED_IN chain ~990 groups deep overflowed Python's
+    default recursion limit inside the (formerly recursive) cycle detector.
+    This chain is deliberately longer than that limit and is acyclic, so a
+    correct iterative implementation must both avoid the RecursionError and
+    report zero cycles.
+    """
+    depth = 1500
+    human = node("human", NodeType.HUMAN_IDENTITY, status=IdentityStatus.ACTIVE)
+    groups = [node(f"group:{index}", NodeType.GROUP) for index in range(depth + 1)]
+    role = node("role", NodeType.ROLE)
+    edges = [raw_edge("member", "human", "group:0", EdgeType.MEMBER_OF)]
+    edges.extend(
+        raw_edge(f"nested:{index}", f"group:{index}", f"group:{index + 1}", EdgeType.NESTED_IN)
+        for index in range(depth)
+    )
+    edges.append(raw_edge("assignment", f"group:{depth}", "role", EdgeType.ASSIGNED_ROLE))
+
+    result = SemanticCompiler(evaluated_at=NOW).compile((human, *groups, role), tuple(edges))
+
+    assert result.group_cycles == ()
+    derived = [
+        edge
+        for edge in result.effective_edges
+        if edge.semantic_rule_id == "nested_group_role_assignment"
+    ]
+    assert len(derived) == 1
+    assert len(derived[0].raw_evidence_edge_ids) == depth + 2
+
+
 def test_attached_policy_and_parent_scope_rules_are_named() -> None:
     human = node("human", NodeType.HUMAN_IDENTITY, status=IdentityStatus.ACTIVE)
     role = node("role", NodeType.ROLE)

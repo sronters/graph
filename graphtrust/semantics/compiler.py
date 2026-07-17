@@ -67,12 +67,27 @@ def _removal_candidates(edges: Iterable[GraphEdge]) -> tuple[str, ...]:
 def _detect_group_cycles(
     adjacency: Mapping[str, Sequence[tuple[str, GraphEdge]]],
 ) -> tuple[tuple[str, ...], ...]:
+    """Iterative 3-color DFS cycle detection.
+
+    Behaviorally identical to a recursive `visit(node)` walk (same
+    active/complete/visiting state machine and the same min-rotation cycle
+    canonicalization), but implemented with an explicit stack instead of the
+    Python call stack. Deeply nested `NESTED_IN` chains (observed at ~990
+    levels on the large-scale profile) exceed Python's default recursion
+    limit under the recursive form; this form has no such ceiling.
+    """
     cycles: set[tuple[str, ...]] = set()
     visiting: list[str] = []
     active: set[str] = set()
     complete: set[str] = set()
 
-    def visit(node: str) -> None:
+    def push(node: str, stack: list[tuple[str, Iterable[str]]]) -> None:
+        """Push node's frame onto `stack` if unvisited, else record a cycle.
+
+        `stack` is passed explicitly (rather than closed over) so this
+        closure has no loop-scoped free variables: it is redefined once,
+        outside any loop, and every call site supplies the current stack.
+        """
         if node in complete:
             return
         if node in active:
@@ -85,14 +100,31 @@ def _detect_group_cycles(
             return
         active.add(node)
         visiting.append(node)
-        for target, _ in adjacency.get(node, ()):
-            visit(target)
-        visiting.pop()
-        active.remove(node)
-        complete.add(node)
+        children = iter([target for target, _ in adjacency.get(node, ())])
+        stack.append((node, children))
 
-    for group_id in sorted(adjacency):
-        visit(group_id)
+    for start_group in sorted(adjacency):
+        if start_group in complete:
+            continue
+        # Each stack frame is (node, iterator over its children). This
+        # mirrors the recursive version's call frame: work done on first
+        # visiting `node` happens when the frame is pushed; work done after
+        # all children are exhausted happens when the frame is popped.
+        stack: list[tuple[str, Iterable[str]]] = []
+        push(start_group, stack)
+        while stack:
+            node, children = stack[-1]
+            next_child = next(children, None)
+            if next_child is None:
+                # All children exhausted: finalize this node, matching the
+                # recursive version's post-recursion cleanup.
+                stack.pop()
+                visiting.pop()
+                active.remove(node)
+                complete.add(node)
+                continue
+            push(next_child, stack)
+
     return tuple(sorted(cycles))
 
 
