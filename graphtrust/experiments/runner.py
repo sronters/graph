@@ -1,5 +1,6 @@
 """Atomic, resumable, checksum-verifiable experiment execution."""
 
+import gc
 import json
 import os
 import platform
@@ -267,6 +268,14 @@ def run_experiment_unit(
         analysis, inference_seconds, peak_rss_mib = _run_with_memory_sampling(
             bundle, config, unit.method
         )
+        # Save only the bundle fields needed after analysis completes, then
+        # release the rest (the large Polars DataFrames) so the GC can reclaim
+        # memory before building Parquet outputs.
+        truth_paths = bundle.truth_paths
+        truth_scenarios = bundle.truth_scenarios
+        bundle_manifest = bundle.manifest
+        del bundle
+        gc.collect()
         result = analysis.results[unit.method]
         # The benchmark truth is first accessed here, after all inference is complete.
         identity_count = sum(
@@ -281,8 +290,8 @@ def run_experiment_unit(
         )
         detection = evaluate_detection(
             result.findings,
-            bundle.truth_paths,
-            bundle.truth_scenarios,
+            truth_paths,
+            truth_scenarios,
             identity_count=identity_count,
         )
         predictions, paths = _finding_frames(result.findings)
@@ -302,7 +311,7 @@ def run_experiment_unit(
         ).write_parquet(staging / "identity_scores.parquet", compression="zstd")
         (staging / "resolved_config.yaml").write_text(config_yaml, encoding="utf-8", newline="\n")
         (staging / "environment.txt").write_text(_environment(), encoding="utf-8", newline="\n")
-        _json(staging / "dataset_manifest.json", bundle.manifest.model_dump(mode="json"))
+        _json(staging / "dataset_manifest.json", bundle_manifest.model_dump(mode="json"))
         _json(staging / "remediation_plans.json", [])
         explanation = {
             "raw_provenance_fraction": sum(
