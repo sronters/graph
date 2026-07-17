@@ -6,6 +6,7 @@ from collections import defaultdict, deque
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from typing import Any
 
 from graphtrust.schemas.conditions import Condition, ConditionContext, ConditionState
 from graphtrust.schemas.edges import EdgeEffect, EdgeType, GraphEdge
@@ -16,6 +17,15 @@ from graphtrust.semantics.conditions import (
     evaluate_condition,
 )
 from graphtrust.semantics.effective_access import EffectiveCapabilityEdge, RejectedSemanticEdge
+
+def _flatten_path(node: tuple[GraphEdge, Any] | None) -> tuple[GraphEdge, ...]:
+    edges = []
+    current = node
+    while current is not None:
+        edges.append(current[0])
+        current = current[1]
+    edges.reverse()
+    return tuple(edges)
 
 IDENTITY_TYPES = frozenset(
     {
@@ -333,28 +343,29 @@ class SemanticCompiler:
                 f"detected {len(cycles)} nested-group cycle(s); cycle edges were bounded"
             )
 
-        membership_paths: dict[str, dict[str, tuple[GraphEdge, ...]]] = defaultdict(dict)
+        membership_paths: dict[str, dict[str, tuple[GraphEdge, Any]]] = defaultdict(dict)
         for member_edge in sorted(memberships, key=lambda item: item.edge_id):
             actor = node_by_id[member_edge.source_id]
             if actor.node_type not in IDENTITY_TYPES:
                 continue
-            queue: deque[tuple[str, tuple[GraphEdge, ...]]] = deque(
-                [(member_edge.target_id, (member_edge,))]
+            queue: deque[tuple[str, tuple[GraphEdge, Any]]] = deque(
+                [(member_edge.target_id, (member_edge, None))]
             )
             visited: set[str] = set()
             while queue:
-                group_id, path = queue.popleft()
+                group_id, path_node = queue.popleft()
                 if group_id in visited:
                     continue
                 visited.add(group_id)
-                membership_paths[actor.node_id][group_id] = path
+                membership_paths[actor.node_id][group_id] = path_node
                 for parent_id, nesting_edge in sorted(group_adjacency.get(group_id, [])):
                     if parent_id not in visited:
-                        queue.append((parent_id, (*path, nesting_edge)))
+                        queue.append((parent_id, (nesting_edge, path_node)))
 
         for actor_id, group_paths in sorted(membership_paths.items()):
             actor = node_by_id[actor_id]
-            for group_id, membership_path in sorted(group_paths.items()):
+            for group_id, path_node in sorted(group_paths.items()):
+                membership_path = _flatten_path(path_node)
                 for role_edge in sorted(
                     group_role_edges.get(group_id, []), key=lambda item: item.edge_id
                 ):
@@ -399,7 +410,7 @@ class SemanticCompiler:
                     principals.append((principal, (attachment,)))
                 elif principal.node_type is NodeType.GROUP:
                     principals.extend(
-                        (node_by_id[actor_id], (*group_paths[principal.node_id], attachment))
+                        (node_by_id[actor_id], (*_flatten_path(group_paths[principal.node_id]), attachment))
                         for actor_id, group_paths in membership_paths.items()
                         if principal.node_id in group_paths
                     )
