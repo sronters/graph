@@ -22,8 +22,17 @@ def analyze_bundle(
     bundle: DatasetBundle,
     config: ProjectConfig,
     methods: tuple[AnalysisMethod, ...],
+    *,
+    retain_raw_edges: bool = True,
 ) -> DatasetAnalysis:
-    """Compile raw semantics, then run methods without exposing benchmark truth."""
+    """Compile raw semantics, then run methods without exposing benchmark truth.
+
+    ``retain_raw_edges=False`` (used by the experiment hot path on the large
+    profile) drops the raw-edge Pydantic tuple after compilation so it does not
+    coexist with the igraph backend and path-search working set.  The default
+    ``True`` keeps ``records.edges`` populated for callers that need it (e.g.
+    remediation/factory.py).
+    """
     # Preserve the dataset timestamp before we do anything else; we need it
     # even after we release the Polars frames.
     evaluated_at = bundle.manifest.generated_at
@@ -61,7 +70,7 @@ def analyze_bundle(
     # before the igraph backend is constructed.
     raw_nodes = records.nodes
     critical_asset_ids = records.critical_asset_ids
-    raw_edges_for_return = records.edges  # kept for remediation / API callers
+    raw_edges_for_return = records.edges if retain_raw_edges else ()
     del records
     gc.collect()
 
@@ -82,8 +91,10 @@ def analyze_bundle(
         limits=limits,
         backend_name=config.backend,
     )
-    # Reconstruct CanonicalRecords with the original raw_edges so that callers
-    # that need analysis.records.edges (e.g. remediation/factory.py) still work.
+    # Reconstruct CanonicalRecords; raw_edges are retained only when the caller
+    # asked for them (default True keeps remediation/factory.py working). When
+    # retain_raw_edges is False, raw_edges_for_return is () so the 2.5 M-edge
+    # tuple does not survive across the path-search peak on the hot path.
     # conditions are not needed downstream so we omit them to save memory.
     return DatasetAnalysis(
         records=CanonicalRecords(

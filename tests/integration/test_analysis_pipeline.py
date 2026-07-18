@@ -36,6 +36,35 @@ def test_pipeline_ignores_truth_tables_during_inference() -> None:
     assert all(result.findings for result in analysis.results.values())
 
 
+def test_retain_raw_edges_flag_drops_edges_without_changing_results() -> None:
+    """The Kaggle hot path drops the raw-edge tuple to shrink the inference peak.
+
+    Default retain_raw_edges=True keeps edges populated for remediation;
+    retain_raw_edges=False empties records.edges but must leave compilation
+    and analysis results identical (the experiment runner never reads edges).
+    """
+    methods = (AnalysisMethod.GRAPHTRUST,)
+
+    retained = analyze_bundle(small_bundle(), load_project_config(), methods)
+    released = analyze_bundle(
+        small_bundle(),
+        load_project_config(),
+        methods,
+        retain_raw_edges=False,
+    )
+
+    assert len(retained.records.edges) == 1
+    assert released.records.edges == ()
+    # Results and compilation are unaffected by the retention flag.
+    assert (
+        len(retained.results[AnalysisMethod.GRAPHTRUST].findings)
+        == len(released.results[AnalysisMethod.GRAPHTRUST].findings)
+    )
+    assert (
+        retained.compilation.effective_edges == released.compilation.effective_edges
+    )
+
+
 def test_igraph_pipeline_matches_reference_finding_signatures() -> None:
     bundle = small_bundle()
     reference_config = load_project_config()

@@ -10,7 +10,7 @@ import sys
 import threading
 import time
 from contextlib import suppress
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -194,8 +194,17 @@ def _run_with_memory_sampling(
     bundle: Any,
     config: ProjectConfig,
     method: Any,
+    *,
+    retain_raw_edges: bool = True,
 ) -> tuple[Any, float, float]:
-    """Run inference while sampling process resident memory."""
+    """Run inference while sampling process resident memory.
+
+    ``retain_raw_edges`` is forwarded to ``analyze_bundle``; the experiment hot
+    path sets it False because it never reads ``analysis.records.edges`` (only
+    remediation/factory.py does, on a separate path), and dropping the raw-edge
+    tuple before the path-search peak removes the largest non-essential live
+    allocation on the large profile.
+    """
     try:
         candidate_process = psutil.Process()
         initial_rss = candidate_process.memory_info().rss
@@ -226,7 +235,7 @@ def _run_with_memory_sampling(
     sampler.start()
     started = time.perf_counter()
     try:
-        analysis = analyze_bundle(bundle, config, (method,))
+        analysis = analyze_bundle(bundle, config, (method,), retain_raw_edges=retain_raw_edges)
     finally:
         stop.set()
         sampler.join(timeout=1)
@@ -246,6 +255,25 @@ def run_experiment_unit(
     """Execute one method without truth access, then score and atomically publish artifacts."""
     bundle = read_dataset(unit.dataset_path)
     dataset_checksum = bundle.tree_checksum or "unavailable"
+    # Hold onto the post-inference fields before the inference peak, then strip
+    # the inference-irrelevant Polars frames (truth_paths / truth_scenarios /
+    # activity / protected_requirements) from the bundle.  Inference only ever
+    # reads nodes / edges / conditions / assets (see bundle_to_records); these
+    # other frames are dead weight across the compile + igraph + path-search
+    # peak on the 2.5 M-edge large profile and were the dominant OOM source on
+    # ~20 GiB Kaggle sessions (exit 137).
+    truth_paths = bundle.truth_paths
+    truth_scenarios = bundle.truth_scenarios
+    bundle_manifest = bundle.manifest
+    empty_frame = pl.DataFrame()
+    bundle = replace(
+        bundle,
+        truth_paths=empty_frame,
+        truth_scenarios=empty_frame,
+        activity=empty_frame,
+        protected_requirements=empty_frame,
+    )
+    gc.collect()
     config_yaml = _resolved_yaml(config)
     commit = _git_commit()
     run_id = deterministic_run_id(unit, dataset_checksum, config_yaml, commit)
@@ -266,14 +294,10 @@ def run_experiment_unit(
     clock = time.perf_counter()
     try:
         analysis, inference_seconds, peak_rss_mib = _run_with_memory_sampling(
-            bundle, config, unit.method
+            bundle, config, unit.method, retain_raw_edges=False
         )
-        # Save only the bundle fields needed after analysis completes, then
-        # release the rest (the large Polars DataFrames) so the GC can reclaim
-        # memory before building Parquet outputs.
-        truth_paths = bundle.truth_paths
-        truth_scenarios = bundle.truth_scenarios
-        bundle_manifest = bundle.manifest
+        # Release the inference-needed frames now that compilation and the
+        # path search are done, before we build the Parquet artifacts.
         del bundle
         gc.collect()
         result = analysis.results[unit.method]
