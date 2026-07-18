@@ -118,8 +118,20 @@ def write_dataset(bundle: DatasetBundle, destination: Path) -> DatasetBundle:
         raise
 
 
-def read_dataset(source: Path, *, verify_checksums: bool = True) -> DatasetBundle:
-    """Read a complete dataset and optionally verify its immutable inventory."""
+def read_dataset(
+    source: Path,
+    *,
+    verify_checksums: bool = True,
+    skip_frames: frozenset[str] = frozenset(),
+) -> DatasetBundle:
+    """Read a complete dataset and optionally verify its immutable inventory.
+
+    ``skip_frames`` names Parquet files (e.g. ``"activity.parquet"``) whose
+    contents the caller will not use; they are returned as empty frames
+    instead of being parsed, avoiding the peak-RAM cost of materializing
+    large Parquet files the caller immediately discards. Checksum
+    verification (file bytes, not decoded frames) is unaffected.
+    """
     missing = [filename for filename in REQUIRED_FILES if not (source / filename).is_file()]
     if missing:
         raise FileNotFoundError(f"Dataset is incomplete; missing: {', '.join(missing)}")
@@ -128,7 +140,12 @@ def read_dataset(source: Path, *, verify_checksums: bool = True) -> DatasetBundl
         if not verified:
             raise ValueError("Dataset checksum verification failed: " + ", ".join(failures))
 
-    frames = {filename: pl.read_parquet(source / filename) for filename in PARQUET_FILES}
+    frames = {
+        filename: (
+            pl.DataFrame() if filename in skip_frames else pl.read_parquet(source / filename)
+        )
+        for filename in PARQUET_FILES
+    }
     manifest = DatasetManifest.model_validate_json(
         (source / "manifest.json").read_text(encoding="utf-8")
     )

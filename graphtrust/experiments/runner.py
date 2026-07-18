@@ -253,15 +253,18 @@ def run_experiment_unit(
     resume: bool = False,
 ) -> ExperimentOutcome:
     """Execute one method without truth access, then score and atomically publish artifacts."""
-    bundle = read_dataset(unit.dataset_path)
+    # Inference only ever reads nodes / edges / conditions / assets (see
+    # bundle_to_records); activity / protected_requirements are never used in
+    # this path, so skip parsing them at all rather than parsing and
+    # discarding. truth_paths / truth_scenarios are needed for scoring after
+    # inference, so they are read normally, held onto below, then stripped
+    # from the bundle before the compile + igraph + path-search peak — that
+    # peak was the dominant OOM source on ~20 GiB Kaggle sessions (exit 137).
+    bundle = read_dataset(
+        unit.dataset_path,
+        skip_frames=frozenset({"activity.parquet", "protected_requirements.parquet"}),
+    )
     dataset_checksum = bundle.tree_checksum or "unavailable"
-    # Hold onto the post-inference fields before the inference peak, then strip
-    # the inference-irrelevant Polars frames (truth_paths / truth_scenarios /
-    # activity / protected_requirements) from the bundle.  Inference only ever
-    # reads nodes / edges / conditions / assets (see bundle_to_records); these
-    # other frames are dead weight across the compile + igraph + path-search
-    # peak on the 2.5 M-edge large profile and were the dominant OOM source on
-    # ~20 GiB Kaggle sessions (exit 137).
     truth_paths = bundle.truth_paths
     truth_scenarios = bundle.truth_scenarios
     bundle_manifest = bundle.manifest
@@ -270,8 +273,6 @@ def run_experiment_unit(
         bundle,
         truth_paths=empty_frame,
         truth_scenarios=empty_frame,
-        activity=empty_frame,
-        protected_requirements=empty_frame,
     )
     gc.collect()
     config_yaml = _resolved_yaml(config)
