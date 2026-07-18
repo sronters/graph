@@ -2,10 +2,22 @@
 
 from __future__ import annotations
 
+import os
 from collections import defaultdict, deque
 from collections.abc import Iterable, Sequence
 
-import igraph as ig  # type: ignore[import-untyped]
+# Importing igraph pulls in igraph.drawing, which imports matplotlib to
+# resolve a plotting backend even though this backend never plots anything.
+# When this module is imported by a plain (non-interactive) subprocess whose
+# environment inherited a Jupyter/IPython kernel's MPLBACKEND (e.g.
+# "module://matplotlib_inline.backend_inline", set by Colab/Kaggle notebook
+# kernels), matplotlib cannot resolve that backend outside the kernel
+# process and raises ValueError during import, crashing any CLI command that
+# touches this module. Force a real headless backend before import; this
+# only affects matplotlib backend selection, not any computed values.
+os.environ["MPLBACKEND"] = "Agg"
+
+import igraph as ig  # type: ignore[import-untyped]  # noqa: E402
 
 from graphtrust.graph.protocol import CapabilityPath
 from graphtrust.schemas.nodes import GraphNode
