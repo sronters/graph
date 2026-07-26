@@ -1,0 +1,140 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[default]{sourcesanspro}
+\usepackage{microtype}
+\usepackage{geometry}
+\usepackage{xcolor}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\geometry{margin=1.7cm}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55em}
+
+\definecolor{Ink}{HTML}{101828}
+\definecolor{Muted}{HTML}{667085}
+\definecolor{Teal}{HTML}{087F8C}
+\definecolor{Green}{HTML}{2E7D5B}
+\definecolor{Blue}{HTML}{2563EB}
+\definecolor{Amber}{HTML}{B7791F}
+\definecolor{Paper}{HTML}{F8FAFC}
+
+\hypersetup{colorlinks=true,linkcolor=Teal,urlcolor=Teal}
+\newcommand{\speakerone}{\textbf{Speaker 1}}
+\newcommand{\speakertwo}{\textbf{Speaker 2}}
+\newcommand{\criterion}[1]{\textcolor{Teal}{\textbf{#1}}}
+\newcommand{\timebox}[1]{\textcolor{Muted}{\textbf{#1}}}
+
+\begin{document}
+
+{\LARGE\bfseries\color{Ink} GraphTrust --- Two-Speaker Grand Finale Script}\par
+{\large\color{Muted}Aligned to \texttt{GraphTrust\_NSRI\_Final\_Clean\_Submission\_v18\_promptedit}}\par
+\vspace{0.25cm}
+
+\textbf{Target delivery:} 2:50--2:58 total. Do not rush the results slide.\par
+\textbf{Split:} Speaker 1 handles Slides 1--4; Speaker 2 handles Slides 5--9.\par
+\textbf{Handoff rule:} one clean handoff only. No back-and-forth between speakers during the main presentation.
+
+\section*{How the Script Covers the Judging Criteria}
+
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\textwidth}{p{2.2cm}p{2.2cm}X}
+\toprule
+\textbf{Criterion} & \textbf{Primary slides} & \textbf{What the judges should understand} \\
+\midrule
+Innovation \& Creativity & 3--6 & GraphTrust treats IAM risk as typed, compositional paths and connects ranking, provenance, and remediation. \\
+Technical / Research Execution & 4--8 & Clear research question, explicit baselines, path-risk scoring, NDCG/recall/grounding results, and counterfactual remediation. \\
+Impact \& Relevance & 1--3, 8--9 & IAM auditors face real multi-hop access complexity; GraphTrust helps prioritize and reduce dangerous exposure while preserving workflows. \\
+Presentation \& Q\&A & all slides & One idea per slide, honest claim boundaries, and concise answers that separate measured results from interpretation. \\
+\bottomrule
+\end{tabularx}
+
+\section*{Slide-by-Slide Timing}
+
+\begin{tabularx}{\textwidth}{p{1.0cm}p{1.55cm}p{2.0cm}X}
+\toprule
+\textbf{Slide} & \textbf{Time} & \textbf{Speaker} & \textbf{Main judging purpose} \\
+\midrule
+1 & 0:00--0:12 & Speaker 1 & Hook + relevance \\
+2 & 0:12--0:38 & Speaker 1 & Problem context + impact \\
+3 & 0:38--0:58 & Speaker 1 & Core theory + innovation \\
+4 & 0:58--1:20 & Speaker 1 & Research question + experimental framing \\
+5 & 1:20--1:45 & Speaker 2 & Core method + technical execution \\
+6 & 1:45--2:04 & Speaker 2 & Baselines + fairness of comparison \\
+7 & 2:04--2:31 & Speaker 2 & Strongest experimental evidence \\
+8 & 2:31--2:47 & Speaker 2 & Remediation + practical impact \\
+9 & 2:47--2:58 & Speaker 2 & Limits + memorable conclusion \\
+\bottomrule
+\end{tabularx}
+
+\section*{Exact Main Script}
+
+\subsection*{Slide 1 --- GraphTrust \hfill \timebox{0:00--0:12} \quad \speakerone}
+\criterion{Presentation + Impact}
+
+Good evening. We are Team Cipher, and this is GraphTrust. Our starting point is simple: IAM risk is not always a direct permission. Sometimes it only appears when permissions compose into a path.
+
+\subsection*{Slide 2 --- What Is IAM, the IAM Auditor, and Why Use Graphs? \hfill \timebox{0:12--0:38} \quad \speakerone}
+\criterion{Impact + Technical framing}
+
+IAM controls which identities can access which cloud resources. An IAM auditor checks those policies for compliance, least privilege, and dangerous over-permissions. Traditional audits often inspect direct grants line by line. A graph asks a different question: \textit{what can this identity eventually reach?} That exposes composed routes through groups, roles, and resources.
+
+\subsection*{Slide 3 --- IAM Risk Is Compositional \hfill \timebox{0:38--0:58} \quad \speakerone}
+\criterion{Innovation + Impact}
+
+That matters because ordinary relationships can compose. A normal user may join a group, assume a role, deploy through CI, and finally reach critical data. None of those hops looks catastrophic alone, but the complete chain can create dangerous exposure.
+
+\subsection*{Slide 4 --- Research Question \hfill \timebox{0:58--1:20} \quad \speakerone}
+\criterion{Innovation + Research Execution}
+
+So our research question is: can typed graph analysis make multi-hop IAM exposure easier to detect, rank, explain, and reduce? We compare GraphTrust with direct auditing, privileged-only traversal, untyped graph search, native-scope auditing, and LLM-style reasoning.
+
+\textbf{Handoff:} Now Speaker 2 will show how GraphTrust answers that question.
+
+\subsection*{Slide 5 --- GraphTrust Core Idea \hfill \timebox{1:20--1:45} \quad \speakertwo}
+\criterion{Innovation + Technical Execution}
+
+GraphTrust converts raw IAM evidence into a typed capability graph. It keeps the meaning of each relation, ranks candidate paths with an ordinal risk score, and ties explanations back to source evidence. The score is for prioritization; it is not a calibrated probability of breach.
+
+\subsection*{Slide 6 --- What Each Method Sees \hfill \timebox{1:45--2:04} \quad \speakertwo}
+\criterion{Technical Execution}
+
+The baselines isolate what each abstraction misses. Direct auditing sees one-hop grants. Privileged-only traversal ignores normal starting identities. Untyped search finds paths but treats hops alike. Native-scope analysis keeps only provider-local context. GraphTrust combines typed paths, ranking, and evidence.
+
+\subsection*{Slide 7 --- Results \hfill \timebox{2:04--2:31} \quad \speakertwo}
+\criterion{Technical Execution + Impact}
+
+In the submitted-paper comparison shown here, GraphTrust reaches an NDCG@10 of 0.88, versus 0.74 for untyped traversal and 0.51 for the LLM pipeline. GraphTrust and untyped traversal both reach 0.758 recall, while GraphTrust keeps 100 percent grounding. So our strongest result is better prioritization and grounded explanation, not higher total recall.
+
+\subsection*{Slide 8 --- Remediation: Safe Recommendations \hfill \timebox{2:31--2:47} \quad \speakertwo}
+\criterion{Technical Execution + Impact}
+
+Detection is useful only if it leads to action. In the remediation experiment, GraphTrust removes target exposure across 225 test configurations while retaining 100 percent of predefined non-malicious workflows, using counterfactual verification before a recommendation is accepted.
+
+\subsection*{Slide 9 --- Final Takeaway \hfill \timebox{2:47--2:58} \quad \speakertwo}
+\criterion{All four criteria}
+
+GraphTrust connects typed graph reasoning, evidence-linked ranking, and verified remediation in one framework. We keep the limits explicit: a synthetic benchmark, ranking rather than breach probability, and recommendation-only changes. Zero Trust should evaluate the path, not just the permission.
+
+\section*{Delivery Rules}
+
+\begin{enumerate}[leftmargin=1.5em,itemsep=0.25em]
+  \item \textbf{Do not read every number on the slide.} Say only the values in the script.
+  \item \textbf{Do not claim GraphTrust has higher total recall than untyped traversal.} The deck shows both at 0.758 recall.
+  \item \textbf{Pause after the research question and after the NDCG result.} Those are the two most important moments.
+  \item \textbf{Speaker 1 owns concept, novelty, IAM context, and impact.} Speaker 2 owns method, baselines, results, remediation, and technical limitations.
+  \item \textbf{Aim to finish at 2:55.} The last three seconds are safety margin, not extra content.
+\end{enumerate}
+
+\section*{One-Line Criterion Reminders}
+
+\textbf{Innovation:} ``The novelty is not simply using a graph; it is typed path reasoning with evidence-linked ranking and verified remediation in one controlled framework.''
+
+\textbf{Technical:} ``We use explicit baselines to isolate direct, privileged-only, untyped, native-scope, and GraphTrust behavior, then evaluate ranking, recall, grounding, and remediation.''
+
+\textbf{Impact:} ``The practical problem is analyst visibility: dangerous access may emerge from several individually ordinary IAM relationships.''
+
+\textbf{Presentation / Q\&A:} ``Our strongest measured claim is prioritization and grounded explanation, and we state the limitations directly.''
+
+\end{document}
