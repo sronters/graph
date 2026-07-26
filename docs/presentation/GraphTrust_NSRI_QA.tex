@@ -1,0 +1,272 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[default]{sourcesanspro}
+\usepackage{microtype}
+\usepackage{geometry}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\geometry{margin=1.7cm}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.45em}
+
+\definecolor{Ink}{HTML}{101828}
+\definecolor{Muted}{HTML}{667085}
+\definecolor{Teal}{HTML}{087F8C}
+\definecolor{Green}{HTML}{2E7D5B}
+\definecolor{Red}{HTML}{C2414B}
+\definecolor{Paper}{HTML}{F8FAFC}
+
+\hypersetup{colorlinks=true,linkcolor=Teal,urlcolor=Teal}
+\newcommand{\q}[1]{\vspace{0.35em}\textbf{Q: #1}\par}
+\newcommand{\a}[1]{\textbf{A:} #1\par}
+\newcommand{\owner}[1]{\textcolor{Muted}{\small Primary responder: #1}\par}
+\newcommand{\danger}[1]{\textcolor{Red}{\textbf{Presenter note:} #1}\par}
+
+\begin{document}
+
+{\LARGE\bfseries\color{Ink} GraphTrust --- NSRI Grand Finale Q\&A Guide}\par
+{\large\color{Muted}Two-speaker defense aligned to the current presentation deck}\par
+\vspace{0.25cm}
+
+\textbf{Speaker split:}\par
+\textbf{Speaker 1:} IAM context, problem, novelty, motivation, impact, claim boundaries.\par
+\textbf{Speaker 2:} graph method, baselines, metrics, results, remediation, technical limitations.
+
+\danger{Keep answers short. In a two-minute Q\&A, answer the question directly in the first sentence, then give one piece of evidence. Do not turn a 20-second answer into a mini-presentation.}
+
+\section*{A. Core Concept and Impact}
+
+\q{1. What is GraphTrust in one sentence?}
+\owner{Speaker 1}
+\a{GraphTrust is a typed graph framework for finding, prioritizing, explaining, and reducing multi-hop IAM exposure while keeping each path tied to source evidence.}
+
+\q{2. What is IAM?}
+\owner{Speaker 1}
+\a{IAM, or Identity and Access Management, is the system of identities, roles, permissions, and policies that determines who or what can access cloud resources.}
+
+\q{3. What does an IAM auditor actually do?}
+\owner{Speaker 1}
+\a{An IAM auditor inspects access policies, checks compliance, enforces least privilege, and looks for dangerous over-permissions or unintended access paths.}
+
+\q{4. Why is a graph useful for IAM?}
+\owner{Speaker 1}
+\a{Because access is often indirect. A graph represents identities, groups, privileges, and resources as connected entities, so we can ask what an identity can eventually reach rather than only what it can access directly.}
+
+\q{5. What do I, G, P, and R mean in your visualization?}
+\owner{Speaker 1}
+\a{I is Identity, such as a user or account; G is Group; P is Privilege or Permission, such as a role or access right; and R is Resource, the asset being reached.}
+
+\q{6. What is multi-hop IAM risk?}
+\owner{Speaker 1}
+\a{It is exposure that emerges only after several legitimate relationships are composed, for example identity to group to role to deployment capability to sensitive data.}
+
+\q{7. Why is this problem important?}
+\owner{Speaker 1}
+\a{Cloud IAM environments are highly connected. A dangerous route may be invisible in any single permission entry, which creates extra work for auditors and can leave transitive exposure unnoticed.}
+
+\q{8. Who would use GraphTrust?}
+\owner{Speaker 1}
+\a{The intended user is a security or IAM analyst who needs to review complex authorization structures, prioritize risky paths, and evaluate safer remediation options.}
+
+\section*{B. Innovation and Research Positioning}
+
+\q{9. Are IAM graphs themselves new?}
+\owner{Speaker 1}
+\a{No. Our claim is not that graphs are new. The contribution is the combination of typed path semantics, evidence-linked ranking, explicit baseline comparison, and verified remediation in one research framework.}
+
+\q{10. What is the main innovation?}
+\owner{Speaker 1}
+\a{The main innovation is treating multi-hop IAM analysis as a typed, auditable path-ranking problem rather than just reachability, and then connecting that analysis to recommendation-only remediation.}
+
+\q{11. Why not just inspect direct permissions?}
+\owner{Speaker 1}
+\a{Direct inspection only captures one-hop grants. It can miss a chain where a normal identity inherits access through groups, roles, or other intermediate capabilities.}
+
+\q{12. Why is privileged-only traversal insufficient?}
+\owner{Speaker 2}
+\a{It assumes the risky path starts from an already privileged identity. That can miss paths whose starting point looks normal but becomes powerful through composition.}
+
+\q{13. Why is untyped graph traversal not enough?}
+\owner{Speaker 2}
+\a{Untyped traversal can discover broad reachability, but it treats different relationships too similarly. GraphTrust keeps the meaning of each hop so that paths can be ranked and explained using IAM semantics.}
+
+\q{14. What is the weakness of native-scope auditing?}
+\owner{Speaker 2}
+\a{It is useful inside a provider's local authorization model, but it may not capture the full end-to-end path when exposure spans multiple scopes or systems.}
+
+\q{15. Why compare with an LLM-style pipeline?}
+\owner{Speaker 2}
+\a{The comparison tests whether free-form reasoning alone can reliably prioritize structural IAM risk. GraphTrust uses explicit graph structure and evidence linkage as the authority for reachability.}
+
+\section*{C. Method and Technical Execution}
+
+\q{16. What is a typed edge?}
+\owner{Speaker 2}
+\a{A typed edge records what the relationship actually means, such as membership, role assumption, deployment capability, or resource access, rather than representing every connection as the same generic edge.}
+
+\q{17. What does the GraphTrust pipeline do?}
+\owner{Speaker 2}
+\a{It takes raw IAM evidence, compiles it into a typed capability graph, analyzes candidate paths, ranks and explains them, and then evaluates remediation recommendations.}
+
+\q{18. What is the path-risk score?}
+\owner{Speaker 2}
+\a{It is an ordinal score used to prioritize paths based on target importance, starting conditions, and the costs or penalties associated with transitions along the path.}
+
+\q{19. Is the path-risk score a probability of compromise?}
+\owner{Speaker 2}
+\a{No. We explicitly do not interpret it as breach probability. It is a ranking score for analyst prioritization.}
+
+\q{20. Why do you need ranking if you already find paths?}
+\owner{Speaker 2}
+\a{Because an analyst cannot inspect every possible path. The practical value comes from placing the most relevant evidence near the top of a limited review queue.}
+
+\q{21. Why use NDCG@10?}
+\owner{Speaker 2}
+\a{NDCG@10 measures ranking quality near the top of the list, which matches an analyst setting where only a small number of findings can be reviewed first.}
+
+\q{22. What does recall measure here?}
+\owner{Speaker 2}
+\a{Recall measures how much of the relevant planted or labeled risk the method successfully retrieves. In the results shown in this deck, GraphTrust and untyped traversal both reach 0.758 recall.}
+
+\q{23. If GraphTrust and untyped traversal have the same recall, why is GraphTrust better?}
+\owner{Speaker 2}
+\a{Our strongest claim is not higher total recall. The advantage shown in this deck is prioritization and explanation: GraphTrust has higher NDCG@10 and keeps every reported hop grounded in evidence.}
+
+\q{24. What does grounding mean?}
+\owner{Speaker 2}
+\a{Grounding means that a reported path or explanation is tied back to the underlying source evidence rather than being an unsupported free-form statement.}
+
+\q{25. Why is grounding important?}
+\owner{Speaker 2}
+\a{Security findings need to be auditable. An analyst should be able to trace a recommendation back to the policy or relationship that produced it.}
+
+\section*{D. Results}
+
+\q{26. What is your strongest result?}
+\owner{Speaker 2}
+\a{In the submitted-paper comparison displayed in the presentation, GraphTrust reaches NDCG@10 of 0.88 versus 0.74 for untyped traversal and 0.51 for the LLM pipeline, while maintaining 100 percent grounding.}
+
+\q{27. What are the recall results?}
+\owner{Speaker 2}
+\a{The slide reports 0.758 recall for both GraphTrust and the untyped graph baseline, and 0.412 for the LLM pipeline.}
+
+\q{28. What is the key interpretation of the results slide?}
+\owner{Speaker 2}
+\a{Whole-graph analysis helps expose the attack surface, while typed semantics improve which findings appear first and make the result easier to audit.}
+
+\q{29. Are you claiming universal superiority over every baseline?}
+\owner{Speaker 2}
+\a{No. We deliberately avoid that claim. The deck itself shows that GraphTrust ties untyped traversal on recall; the stronger measured difference is ranking and grounded explanation.}
+
+\section*{E. Remediation}
+
+\q{30. How does remediation work conceptually?}
+\owner{Speaker 2}
+\a{GraphTrust proposes changes that break risky reachability, then checks the modified graph counterfactually to confirm that target exposure is removed while required workflows remain reachable.}
+
+\q{31. What does zero target exposure after remediation mean?}
+\owner{Speaker 2}
+\a{Within the remediation experiment shown in the deck, the modeled target exposure was eliminated after applying the recommended changes in the tested configurations. It is a benchmark result, not a guarantee for every real environment.}
+
+\q{32. What does 100 percent workflow retention mean?}
+\owner{Speaker 2}
+\a{The predefined non-malicious workflows encoded in the experiment remained reachable after remediation. That is how we test that the recommendation does not simply remove all access.}
+
+\q{33. Why 225 test configurations?}
+\owner{Speaker 2}
+\a{The current presentation reports remediation outcomes across 225 enterprise-style test configurations. The important point for the defense is that remediation was evaluated repeatedly rather than on a single example.}
+
+\q{34. Does GraphTrust automatically modify live permissions?}
+\owner{Speaker 2}
+\a{No. The system is recommendation-only. A human analyst remains responsible for reviewing and applying any real IAM change.}
+
+\section*{F. Validity, Limitations, and Safety}
+
+\q{35. Did you test on real company IAM data?}
+\owner{Speaker 1}
+\a{No. The current study uses a synthetic benchmark. That gives us controlled ground truth, but it also limits how far we can generalize to production environments.}
+
+\q{36. Why use synthetic data?}
+\owner{Speaker 1}
+\a{Synthetic environments allow controlled injection of known risk and fair comparison between methods. The tradeoff is lower external validity than authorized real-world data.}
+
+\q{37. What is the biggest limitation?}
+\owner{Speaker 1}
+\a{The biggest limitation is external validity: the benchmark is synthetic, so real enterprise validation is still required before making production-level claims.}
+
+\q{38. Can GraphTrust guarantee that a discovered path will be exploited?}
+\owner{Speaker 1}
+\a{No. Reachability represents modeled authorization exposure, not proof that an attacker will exploit the path.}
+
+\q{39. Can GraphTrust guarantee that remediation is safe in a real company?}
+\owner{Speaker 2}
+\a{No. The experiment verifies modeled workflows and reachability inside the benchmark. Real deployment would still require human approval, provider-specific testing, and change-management controls.}
+
+\q{40. What about scalability?}
+\owner{Speaker 2}
+\a{The current deck is focused on correctness, ranking, and remediation behavior rather than claiming production-scale performance. Scalability on large authorized enterprise IAM graphs is future validation work.}
+
+\q{41. What about false positives?}
+\owner{Speaker 2}
+\a{This presentation does not make a zero-false-positive claim. The goal of ranking is to make the review queue more useful, but analyst review is still required.}
+
+\q{42. What is the ethical or safety position of the system?}
+\owner{Speaker 1}
+\a{GraphTrust is designed as a defensive auditing and recommendation system. It does not autonomously change permissions, and the final decision remains with the responsible security team.}
+
+\section*{G. Future Work and Rapid-Fire Questions}
+
+\q{43. What is the next research step?}
+\owner{Speaker 1}
+\a{The next step is authorized validation on more realistic enterprise IAM snapshots, stronger provider-specific semantics, and scalability testing while preserving the same evidence and workflow checks.}
+
+\q{44. What is your contribution in one sentence?}
+\owner{Speaker 1}
+\a{We show how typed, evidence-linked whole-identity graph reasoning can turn hidden multi-hop IAM exposure into a ranked and remediable analyst workflow.}
+
+\q{45. What is the strongest technical idea?}
+\owner{Speaker 2}
+\a{Separating broad path discovery from typed semantic ranking: the graph finds the surface, while semantics determine which paths are most useful to review and explain.}
+
+\q{46. What is the strongest practical idea?}
+\owner{Speaker 1}
+\a{Moving the auditor's question from ``what direct permission exists?'' to ``what critical resource can this identity eventually reach, and how can we safely break that path?''}
+
+\q{47. Give us the project in 15 seconds.}
+\owner{Either speaker}
+\a{GraphTrust models IAM as a typed graph, finds multi-hop access routes, ranks them with evidence-linked explanations, and proposes verified remediation while preserving required workflows.}
+
+\q{48. What should the judges remember?}
+\owner{Either speaker}
+\a{Zero Trust should evaluate the path, not just the permission.}
+
+\section*{Presenter-Only Version Control Note}
+
+\danger{The current presentation uses the submitted-paper result values shown on its Results slide. During the defense, use one result version consistently. If a judge explicitly cites a different artifact or result snapshot, acknowledge the source they are referencing and do not mix numbers from different snapshots in one claim.}
+
+\section*{Two-Minute Q\&A Strategy}
+
+\begin{enumerate}[leftmargin=1.5em,itemsep=0.25em]
+  \item Let the judge finish completely before answering.
+  \item The person who owns the topic answers first; the other speaker only adds something if necessary.
+  \item Start with \textbf{yes}, \textbf{no}, or the direct conclusion whenever possible.
+  \item Use one metric at most per answer unless the judge specifically asks for numbers.
+  \item Never defend a stronger claim than the slide supports.
+  \item If you do not know, say: ``That is outside what we validated in this study; our next experiment would be ...''
+\end{enumerate}
+
+\section*{Do Not Say}
+
+\begin{itemize}[leftmargin=1.5em,itemsep=0.2em]
+  \item ``GraphTrust invented IAM graphs.''
+  \item ``GraphTrust has higher total recall than untyped traversal.''
+  \item ``The risk score is the probability of a breach.''
+  \item ``We proved this works in real companies.''
+  \item ``Remediation is automatically safe.''
+  \item ``The system should autonomously change production IAM.''
+\end{itemize}
+
+\end{document}
